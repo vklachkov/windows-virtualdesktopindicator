@@ -3,7 +3,7 @@
 # Screenshot #
 ![Sample image](sample.png)
 
-*Sample preview (taken in Windows Explorer in Windows 10)*
+*Sample preview*
 
 # VirtualDesktopIndicator #
 A Windows tray indicator for virtual desktops
