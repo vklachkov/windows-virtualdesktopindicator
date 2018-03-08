@@ -15,7 +15,7 @@ Inspired by console tool [VirtualDesktop](https://github.com/MScholtes/VirtualDe
 It displays current virtual desktop in the system tray
 
 # How to install #
-Download the latest release from [VirtualDesktopIndicator releases on GitHub](https://github.com/Atrejoe/MarkdownPreview/releases "VirtualDesktopIndicator on GitHub") and run it.
+Download the latest release from [VirtualDesktopIndicator releases on GitHub](https://github.com/reserfodium/VirtualDesktopIndicator/releases "VirtualDesktopIndicator on GitHub") and run it.
 
 # Acknowledgements #
 Next to VirtualDesktop, special thanks also go out to [R. Giskard Reventlov](https://www.codeproject.com/Articles/290013/Formless-System-Tray-Application "Formless System Tray Application"), who created beautiful and powerful example. Source based on his work
