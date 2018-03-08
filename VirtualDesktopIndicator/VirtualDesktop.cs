@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
+// This code from https://github.com/MScholtes/VirtualDesktop
 namespace VirtualDesktop
 {
     internal static class Guids
