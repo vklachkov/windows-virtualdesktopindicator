@@ -8,7 +8,7 @@ namespace VirtualDesktopIndicator
     {
         #region Data
 
-        NotifyIcon notifyIcon;
+        NotifyIcon trayIcon;
         Timer timer;
 
         #region Font
@@ -20,6 +20,8 @@ namespace VirtualDesktopIndicator
         #endregion
 
         #region Common
+
+        int VirtualDesktopsCount => VirtualDesktop.Desktop.Count;
 
         int CurrentVirtualDesktop => VirtualDesktop.Desktop.FromDesktop(VirtualDesktop.Desktop.Current) + 1;
         int CachedVirtualDesktop = 0;
@@ -37,21 +39,36 @@ namespace VirtualDesktopIndicator
         
         public TrayIndicator()
         {
-            notifyIcon = new NotifyIcon();
+            trayIcon = new NotifyIcon();
+            trayIcon.ContextMenuStrip =   CreateContextMenu();
 
-            timer = new Timer();
-
-            timer.Enabled = false;
-            timer.Tick += timerUpdate;
+            timer = new Timer
+            {
+                Enabled = false
+            };
+            timer.Tick += timer_Update;
         }
 
         public void Display()
         {
-            notifyIcon.Visible = true;
+            trayIcon.Visible = true;
             timer.Enabled = true;
         }
 
-        private void timerUpdate(object sender, EventArgs e)
+        private ContextMenuStrip CreateContextMenu()
+        {
+             var menu = new ContextMenuStrip();
+            
+            // Exit
+            ToolStripMenuItem exit = new ToolStripMenuItem();
+            exit.Text = "Exit";
+            exit.Click += (sender, e) => Application.Exit();
+            menu.Items.Add(exit);
+
+            return menu;
+        }
+
+        private void timer_Update(object sender, EventArgs e)
         {
             if (CurrentVirtualDesktop != CachedVirtualDesktop)
             {
@@ -60,7 +77,7 @@ namespace VirtualDesktopIndicator
 
                 try
                 {
-                    notifyIcon.Icon = GenerateIcon(iconText);
+                    trayIcon.Icon = GenerateIcon(iconText);
                 }
                 catch
                 {
@@ -97,7 +114,7 @@ namespace VirtualDesktopIndicator
 
         public void Dispose()
         {
-            notifyIcon.Dispose();
+            trayIcon.Dispose();
             timer.Dispose();
         }
     }
