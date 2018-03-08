@@ -1,8 +1,9 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/6ebto4a79tav3wmmndjb?svg=true)](https://ci.appveyor.com/project/reserfodium/virtualdesktopindicator)
+[![Build status](https://ci.appveyor.com/api/projects/status/28spgc5ew3ga81rj?svg=true)](https://ci.appveyor.com/project/reserfodium/virtualdesktopindicator)
 
 # Screenshot #
 ![Sample image](sample.png)
-*Sample preview*
+
+*Sample preview (taken in Windows Explorer in Windows 10)*
 
 # VirtualDesktopIndicator #
 A Windows tray indicator for virtual desktops
