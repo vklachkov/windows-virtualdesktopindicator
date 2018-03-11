@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -70,21 +71,28 @@ namespace VirtualDesktopIndicator
 
         private void timer_Update(object sender, EventArgs e)
         {
-            if (CurrentVirtualDesktop != CachedVirtualDesktop)
+            try
             {
-                string iconText = CurrentVirtualDesktop.ToString("00");
-                if (CurrentVirtualDesktop >= 100) iconText = "++";
-
-                try
+                if (CurrentVirtualDesktop != CachedVirtualDesktop)
                 {
-                    trayIcon.Icon = GenerateIcon(iconText);
-                }
-                catch
-                {
+                    string iconText = CurrentVirtualDesktop.ToString("00");
+                    if (CurrentVirtualDesktop >= 100) iconText = "++";
 
-                }
+                    try
+                    {
+                        trayIcon.Icon = GenerateIcon(iconText);
+                    }
+                    catch
+                    {
 
-                CachedVirtualDesktop = CurrentVirtualDesktop;
+                    }
+
+                    CachedVirtualDesktop = CurrentVirtualDesktop;
+                }
+            }
+            catch
+            {
+                Application.Restart();
             }
         }
 
