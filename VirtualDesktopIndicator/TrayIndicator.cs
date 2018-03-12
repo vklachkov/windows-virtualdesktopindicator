@@ -40,8 +40,10 @@ namespace VirtualDesktopIndicator
         
         public TrayIndicator()
         {
-            trayIcon = new NotifyIcon();
-            trayIcon.ContextMenuStrip =   CreateContextMenu();
+            trayIcon = new NotifyIcon
+            {
+                ContextMenuStrip = CreateContextMenu()
+            };
 
             timer = new Timer
             {
@@ -59,10 +61,12 @@ namespace VirtualDesktopIndicator
         private ContextMenuStrip CreateContextMenu()
         {
              var menu = new ContextMenuStrip();
-            
+
             // Exit
-            ToolStripMenuItem exit = new ToolStripMenuItem();
-            exit.Text = "Exit";
+            ToolStripMenuItem exit = new ToolStripMenuItem
+            {
+                Text = "Exit"
+            };
             exit.Click += (sender, e) => Application.Exit();
             menu.Items.Add(exit);
 
