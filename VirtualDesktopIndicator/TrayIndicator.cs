@@ -87,10 +87,9 @@ namespace VirtualDesktopIndicator
         {
             using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", false))
             {
-                object keyValue = key.GetValue(appName);
+                object keyValue = key.GetValue(appName) ?? "";
 
-                if (keyValue.ToString() != "\"" + Application.ExecutablePath + "\"" ||
-                    keyValue == null)
+                if (keyValue.ToString() != "\"" + Application.ExecutablePath + "\"")
                 {
                     return false;
                 }
