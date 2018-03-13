@@ -9,6 +9,8 @@ namespace VirtualDesktopIndicator
     {
         #region Data
 
+        string appName = "VirtualDesktopIndicator";
+
         NotifyIcon trayIcon;
         Timer timer;
 
@@ -79,21 +81,31 @@ namespace VirtualDesktopIndicator
 
         #region Functions
 
-        #region Autostartup
+        #region Autorun
 
-        public static void AddApplicationToStartup()
+        private bool GetAutorunStatus()
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", false))
             {
-                key.SetValue("My Program", "\"" + Application.ExecutablePath + "\"");
+                return key.GetValue(appName) != null;
             }
         }
 
-        public static void RemoveApplicationFromStartup()
+        // https://www.fluxbytes.com/csharp/start-application-at-windows-startup/
+
+        private void AddApplicationToAutorun()
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true))
             {
-                key.DeleteValue("My Program", false);
+                key.SetValue(appName, "\"" + Application.ExecutablePath + "\"");
+            }
+        }
+
+        private void RemoveApplicationFromAutorun()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            {
+                key.DeleteValue(appName, false);
             }
         }
 
@@ -108,6 +120,29 @@ namespace VirtualDesktopIndicator
         private ContextMenuStrip CreateContextMenu()
         {
             var menu = new ContextMenuStrip();
+
+            // Autostartup
+            ToolStripMenuItem autostartup = new ToolStripMenuItem("Start application at Windows startup")
+            {
+                Checked = GetAutorunStatus()
+            };
+            autostartup.Click += (sender, e) =>
+                {
+                    autostartup.Checked = !autostartup.Checked;
+
+                    if (GetAutorunStatus())
+                    {
+                        RemoveApplicationFromAutorun();
+                    }
+                    else
+                    {
+                        AddApplicationToAutorun();
+                    }
+                };
+            menu.Items.Add(autostartup);
+
+            // Separator
+            menu.Items.Add(new ToolStripSeparator());
 
             // Exit
             ToolStripMenuItem exit = new ToolStripMenuItem("Exit");
