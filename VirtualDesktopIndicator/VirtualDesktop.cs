@@ -1,7 +1,8 @@
-﻿using System;
+﻿// https://github.com/MScholtes/VirtualDesktop
+
+using System;
 using System.Runtime.InteropServices;
 
-// This code from https://github.com/MScholtes/VirtualDesktop
 namespace VirtualDesktop
 {
     internal static class Guids

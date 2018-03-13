@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace VirtualDesktopIndicator
@@ -15,8 +14,6 @@ namespace VirtualDesktopIndicator
             using (TrayIndicator ti = new TrayIndicator())
             {
                 ti.Display();
-
-                // Make sure the application runs!
                 Application.Run();
             }
         }

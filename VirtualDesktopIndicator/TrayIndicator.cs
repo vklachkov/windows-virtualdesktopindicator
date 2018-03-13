@@ -1,5 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using Microsoft.Win32;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -37,7 +37,7 @@ namespace VirtualDesktopIndicator
         #endregion
 
         #endregion
-        
+
         public TrayIndicator()
         {
             trayIcon = new NotifyIcon
@@ -52,26 +52,7 @@ namespace VirtualDesktopIndicator
             timer.Tick += timer_Update;
         }
 
-        public void Display()
-        {
-            trayIcon.Visible = true;
-            timer.Enabled = true;
-        }
-
-        private ContextMenuStrip CreateContextMenu()
-        {
-             var menu = new ContextMenuStrip();
-
-            // Exit
-            ToolStripMenuItem exit = new ToolStripMenuItem
-            {
-                Text = "Exit"
-            };
-            exit.Click += (sender, e) => Application.Exit();
-            menu.Items.Add(exit);
-
-            return menu;
-        }
+        #region Events
 
         private void timer_Update(object sender, EventArgs e)
         {
@@ -82,14 +63,8 @@ namespace VirtualDesktopIndicator
                     string iconText = CurrentVirtualDesktop.ToString("00");
                     if (CurrentVirtualDesktop >= 100) iconText = "++";
 
-                    try
-                    {
-                        trayIcon.Icon = GenerateIcon(iconText);
-                    }
-                    catch
-                    {
-
-                    }
+                    // GenerateIcon() can return null
+                    trayIcon.Icon = GenerateIcon(iconText);
 
                     CachedVirtualDesktop = CurrentVirtualDesktop;
                 }
@@ -98,6 +73,48 @@ namespace VirtualDesktopIndicator
             {
                 Application.Restart();
             }
+        }
+
+        #endregion
+
+        #region Functions
+
+        #region Autostartup
+
+        public static void AddApplicationToStartup()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            {
+                key.SetValue("My Program", "\"" + Application.ExecutablePath + "\"");
+            }
+        }
+
+        public static void RemoveApplicationFromStartup()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+            {
+                key.DeleteValue("My Program", false);
+            }
+        }
+
+        #endregion
+
+        public void Display()
+        {
+            trayIcon.Visible = true;
+            timer.Enabled = true;
+        }
+
+        private ContextMenuStrip CreateContextMenu()
+        {
+            var menu = new ContextMenuStrip();
+
+            // Exit
+            ToolStripMenuItem exit = new ToolStripMenuItem("Exit");
+            exit.Click += (sender, e) => Application.Exit();
+            menu.Items.Add(exit);
+
+            return menu;
         }
 
         private Icon GenerateIcon(string text)
@@ -121,8 +138,17 @@ namespace VirtualDesktopIndicator
 
             // Create icon from bitmap and return it
             // bitmapText.GetHicon() can throw exception
-            return Icon.FromHandle(bitmapText.GetHicon());
+            try
+            {
+                return Icon.FromHandle(bitmapText.GetHicon());
+            }
+            catch
+            {
+                return null;
+            }
         }
+
+        #endregion
 
         public void Dispose()
         {
