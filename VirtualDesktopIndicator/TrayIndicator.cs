@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace VirtualDesktopIndicator
@@ -46,6 +47,7 @@ namespace VirtualDesktopIndicator
             {
                 ContextMenuStrip = CreateContextMenu()
             };
+            trayIcon.Click += trayIcon_Click;
 
             timer = new Timer
             {
@@ -77,9 +79,37 @@ namespace VirtualDesktopIndicator
             }
         }
 
+        private void trayIcon_Click(object sender, EventArgs e)
+        {
+            MouseEventArgs me = e as MouseEventArgs;
+            if (me.Button == MouseButtons.Left) ShowTaskView();
+        }
+
         #endregion
 
         #region Functions
+
+        #region Task View
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
+
+        public static void ShowTaskView()
+        {
+            const int KEYEVENTF_EXTENDEDKEY = 0x0001;  // Key down flag
+            const int KEYEVENTF_KEYUP = 0x0002;  // Key up flag
+
+            const int VK_TAB = 0x09;  // Tab key code
+            const int VK_LWIN = 0x5B;  // Windows key code
+
+            // Hold Windows down and press Tab
+            keybd_event(VK_LWIN, 0, KEYEVENTF_EXTENDEDKEY, 0);
+            keybd_event(VK_TAB, 0, KEYEVENTF_EXTENDEDKEY, 0);
+            keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+        }
+
+        #endregion
 
         #region Autorun
 
