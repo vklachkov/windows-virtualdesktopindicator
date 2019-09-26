@@ -75,7 +75,8 @@ namespace VirtualDesktopIndicator
             }
             catch
             {
-                Application.Restart();
+                MessageBox.Show("An unhandled error occured.", "VirtualDesktopIndicator", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
             }
         }
 
