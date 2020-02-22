@@ -1,14 +1,32 @@
 ﻿using Microsoft.Win32;
+using RegistryUtils;
 using System;
 using System.Drawing;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace VirtualDesktopIndicator
 {
+    enum Theme { Light, Dark }
+
     class TrayIndicator : IDisposable
     {
+        
+
         #region Data
+
+        private bool cachedSystemUsedLightTheme;
+
+        private RegistryMonitor registryMonitor;
+
+        Color DarkThemeColor { get; } = Color.White;
+        Color LightThemeColor { get; } = Color.Black;
+
+        Theme Theme = Theme.Dark;
+
+        Color iconColor => (Theme == Theme.Dark) ? DarkThemeColor : LightThemeColor;
+
 
         string appName = "VirtualDesktopIndicator";
 
@@ -54,6 +72,11 @@ namespace VirtualDesktopIndicator
                 Enabled = false
             };
             timer.Tick += timer_Update;
+
+            registryMonitor = new RegistryMonitor(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            registryMonitor.RegChanged += new EventHandler(OnRegChanged);
+            registryMonitor.Error += new System.IO.ErrorEventHandler(OnError);
+            registryMonitor.Start();
         }
 
         #region Events
@@ -194,6 +217,7 @@ namespace VirtualDesktopIndicator
             Font fontToUse = new Font(IconFontName, IconFontSize, IconFontStyle, GraphicsUnit.Pixel);
             Brush brushToUse = new SolidBrush(MainColor);
             Bitmap bitmapText = new Bitmap(MagicSize, MagicSize);  // Const size for tray icon
+            Brush brushToUse = new SolidBrush(iconColor);
 
             Graphics g = Graphics.FromImage(bitmapText);
 
@@ -203,6 +227,7 @@ namespace VirtualDesktopIndicator
             g.DrawRectangle(
                 new Pen(MainColor, 1),
                 new Rectangle(0, 0, MagicSize - 1, MagicSize - 1));
+                new Pen(iconColor, 1),
 
             // Draw text
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
@@ -221,6 +246,36 @@ namespace VirtualDesktopIndicator
         }
 
         #endregion
+
+        private void OnRegChanged(object sender, EventArgs e)
+        {
+            var systemUsedLightTheme = (int)Registry.GetValue(
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                "SystemUsesLightTheme",
+                0
+            ) == 1;
+
+            if (systemUsedLightTheme != cachedSystemUsedLightTheme)
+            {
+                Theme = systemUsedLightTheme ? Theme.Light : Theme.Dark;
+
+            }
+
+            trayIcon.Icon = GenerateIcon(iconText);
+
+            cachedSystemUsedLightTheme = systemUsedLightTheme;
+        }
+
+        private void OnError(object sender, ErrorEventArgs e)
+        {
+            if (registryMonitor != null)
+            {
+                registryMonitor.Stop();
+                registryMonitor.RegChanged -= new EventHandler(OnRegChanged);
+                registryMonitor.Error -= new System.IO.ErrorEventHandler(OnError);
+                registryMonitor = null;
+            }
+        }
 
         public void Dispose()
         {
