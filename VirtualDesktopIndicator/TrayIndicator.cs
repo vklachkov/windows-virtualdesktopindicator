@@ -35,9 +35,7 @@ namespace VirtualDesktopIndicator
 
         #region Font
 
-        string IconFontName { get; } = "Pixel FJVerdana";
-        int IconFontSize { get; } = 10;
-        FontStyle IconFontStyle { get; } = FontStyle.Regular;
+
 
         #endregion
 
@@ -48,12 +46,20 @@ namespace VirtualDesktopIndicator
         int CurrentVirtualDesktop => VirtualDesktop.Desktop.FromDesktop(VirtualDesktop.Desktop.Current) + 1;
         int CachedVirtualDesktop = 0;
 
-        Color MainColor { get; } = Color.White;
+        private const string IconFontName = "Graph 35+ pix";
+        int IconFontSize { get; } = 32;
+        FontStyle IconFontStyle { get; } = FontStyle.Bold;
 
-        float OffsetX { get; } = 1;
-        float OffsetY { get; } = 1;
+        int height => SystemMetrics.GetSystemMetrics(SystemMetric.SM_CYICON);
+        int width => SystemMetrics.GetSystemMetrics(SystemMetric.SM_CXICON);
 
-        int MagicSize { get; } = 16;  // Constant tray icon size 
+        int baseHeight = 16;
+        int baseWidth = 16;
+
+        int BorderThinkness => (int) Math.Ceiling((height * width) / (baseHeight * baseWidth) / 2.0);
+
+
+        string iconText;
 
         #endregion
 
@@ -87,11 +93,11 @@ namespace VirtualDesktopIndicator
             {
                 if (CurrentVirtualDesktop != CachedVirtualDesktop)
                 {
-                    string iconText = CurrentVirtualDesktop.ToString("00");
+                    iconText = CurrentVirtualDesktop.ToString("0");
                     if (CurrentVirtualDesktop >= 100) iconText = "++";
 
                     // GenerateIcon() can return null
-                    trayIcon.Icon = GenerateIcon(iconText);
+                    trayIcon.Icon = GenerateIcon("+");
 
                     CachedVirtualDesktop = CurrentVirtualDesktop;
                 }
@@ -214,24 +220,31 @@ namespace VirtualDesktopIndicator
 
         private Icon GenerateIcon(string text)
         {
+
             Font fontToUse = new Font(IconFontName, IconFontSize, IconFontStyle, GraphicsUnit.Pixel);
-            Brush brushToUse = new SolidBrush(MainColor);
-            Bitmap bitmapText = new Bitmap(MagicSize, MagicSize);  // Const size for tray icon
             Brush brushToUse = new SolidBrush(iconColor);
+            Bitmap bitmapText = new Bitmap(width, height);
 
             Graphics g = Graphics.FromImage(bitmapText);
+
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
 
             g.Clear(Color.Transparent);
 
             // Draw border
             g.DrawRectangle(
-                new Pen(MainColor, 1),
-                new Rectangle(0, 0, MagicSize - 1, MagicSize - 1));
-                new Pen(iconColor, 1),
+                new Pen(iconColor, BorderThinkness),
+                new Rectangle(1, 1, width - 2, height - 2));
 
             // Draw text
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
-            g.DrawString(text, fontToUse, brushToUse, OffsetX, OffsetY);
+
+            var t = g.MeasureString(text, fontToUse);
+
+            var offsetX = (width - t.Width) / 2 + BorderThinkness / 2;
+            var offsetY = (height - t.Height) / 2 + BorderThinkness / 2;
+
+            g.DrawString(text, fontToUse, brushToUse, offsetX, offsetY);
 
             // Create icon from bitmap and return it
             // bitmapText.GetHicon() can throw exception
