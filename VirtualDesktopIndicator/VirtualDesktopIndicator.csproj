@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RegistryMonitor.cs" />
     <Compile Include="TrayIndicator.cs" />
     <Compile Include="VirtualDesktop.cs" />
   </ItemGroup>
