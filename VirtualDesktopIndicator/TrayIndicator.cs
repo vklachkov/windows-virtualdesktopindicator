@@ -97,7 +97,7 @@ namespace VirtualDesktopIndicator
                     if (CurrentVirtualDesktop >= 100) iconText = "++";
 
                     // GenerateIcon() can return null
-                    trayIcon.Icon = GenerateIcon("+");
+                    trayIcon.Icon = GenerateIcon(iconText);
 
                     CachedVirtualDesktop = CurrentVirtualDesktop;
                 }
