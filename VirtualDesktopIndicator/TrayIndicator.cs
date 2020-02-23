@@ -194,12 +194,11 @@ namespace VirtualDesktopIndicator
                 }
             };
 
-            menu.Items.Add(new ToolStripSeparator());
-
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (sender, e) => Application.Exit();
 
             menu.Items.Add(autorunItem);
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(exitItem);
 
             return menu;
