@@ -1,24 +1,21 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/28spgc5ew3ga81rj?svg=true)](https://ci.appveyor.com/project/reserfodium/virtualdesktopindicator)
+# Virtual Desktop Indicator
 
-# Screenshot #
-![Sample image](sample.png)
+Virtual desktop indicator for system tray with light and dark theme and HiDPI support.
 
-*Sample preview*
+## Screenshot
 
-# VirtualDesktopIndicator #
-A Windows tray indicator for virtual desktops
+![Preivew](preview.jpg)
 
-# Origin #
-Inspired by console tool [VirtualDesktop](https://github.com/MScholtes/VirtualDesktop "VirtualDesktop"), a simplest app for working with virtual desktops on Windows 10.
+*Dark theme screenshot*
 
-# What does it do? #
-It displays current virtual desktop in the system tray
+## Install
 
-# How to install #
-Download the latest release from [VirtualDesktopIndicator releases on GitHub](https://github.com/flaflo/VirtualDesktopIndicator/releases "VirtualDesktopIndicator on GitHub") and run it.
+Download the latest release from [VirtualDesktopIndicator releases on GitHub](https://github.com/0gdump/windows-virtualdesktopindicator/releases "VirtualDesktopIndicator on GitHub") and run it.
 
-# Acknowledgements #
-Next to VirtualDesktop, special thanks also go out to [R. Giskard Reventlov](https://www.codeproject.com/script/Membership/View.aspx?mid=46383 "R. Giskard Reventlov on CodeProject"), who created beautiful and powerful [example](https://www.codeproject.com/Articles/290013/Formless-System-Tray-Application "Formless System Tray Application"). Source based on his work
+## Special thanks
 
-# Application Icon #
-Application icon taken from [icons8.com](https://icons8.com/)
+Special thanks to the user [Flaflo](https://github.com/Flaflo) for improving compatibility with Windows 10 1809+.
+
+## License
+
+The app is distributed under [MIT License](https://github.com/0gdump/windows-virtualdesktopindicator/blob/master/LICENSE).
