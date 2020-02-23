@@ -4,7 +4,7 @@ Virtual desktop indicator for system tray with light and dark theme and HiDPI su
 
 ## Screenshot
 
-![Preivew](preview.jpg)
+<img src="./preview.jpg" alt="drawing" width="194" height="40"/>
 
 *Dark theme screenshot*
 
