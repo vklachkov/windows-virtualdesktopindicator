@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // связанные со сборкой.
 [assembly: AssemblyTitle("VirtualDesktopIndicator")]
-[assembly: AssemblyDescription("Indicates the current virtual desktop in the tray icon menu")]
+[assembly: AssemblyDescription("Virtual desktop indicator for system tray")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Reserfodium")]
+[assembly: AssemblyCompany("0gdump")]
 [assembly: AssemblyProduct("VirtualDesktopIndicator")]
-[assembly: AssemblyCopyright("Copyright © Reserfodium 2019")]
+[assembly: AssemblyCopyright("Copyright © 0gdump 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.2.4.0")]
-[assembly: AssemblyFileVersion("1.2.4.0")]
+[assembly: AssemblyVersion("1.3.1.0")]
+[assembly: AssemblyFileVersion("1.3.1.0")]
