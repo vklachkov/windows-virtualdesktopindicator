@@ -55,17 +55,19 @@ namespace VirtualDesktopIndicator
 
         #region Drawing data 
 
-        private const string FontName = "Graph 35+ pix";
-        private const int FontSize = 32;
-        private FontStyle FontStyle = FontStyle.Regular;
-
+        // Default windows tray icon size
         private const int BaseHeight = 16;
-        private int Height => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CYICON);
-
         private const int BaseWidth = 16;
-        private int Width => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CXICON);
 
-        private int BorderThinkness => (int)Math.Ceiling((Height * Width) / (BaseHeight * BaseWidth) / 2.0);
+        // We use half the size, because otherwise the image is rendered with incorrect anti-aliasing
+        private int Height => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CYICON) / 2;
+        private int Width => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CXICON) / 2;
+
+        private int BorderThinkness => Width / BaseWidth;
+
+        private const string FontName = "Tahoma";
+        private int FontSize => (int)Math.Ceiling(Width / 1.5);
+        private FontStyle FontStyle = FontStyle.Regular;
 
         string cachedDisplayText;
 
@@ -218,16 +220,31 @@ namespace VirtualDesktopIndicator
             g.Clear(Color.Transparent);
 
             // Draw border
-            g.DrawRectangle(
-                new Pen(CurrentThemeColor, BorderThinkness),
-                new Rectangle(1, 1, Width - 2, Height - 2)
-            );
+            // The g.DrawRectangle always uses anti-aliasing and border looks very poor at such small resolutions
+            // Implement own hack!
+            var pen = new Pen(CurrentThemeColor, 1);
+            for (int o = 0; o < BorderThinkness; o++)
+            {
+                // Top
+                g.DrawLine(pen, 0, o, Width - 1, o);
+
+                // Right
+                g.DrawLine(pen, o, 0, o, Height - 1);
+
+                // Left
+                g.DrawLine(pen, Width - 1 - o, 0, Width - 1 - o, Height - 1);
+
+                // Bottom
+                g.DrawLine(pen, 0, Height - 1 - o, Width - 1, Height - 1 - o);
+            }
 
             // Draw text
             var textSize = g.MeasureString(cachedDisplayText, font);
 
-            var offsetX = (Width - textSize.Width) / 2 + BorderThinkness / 2;
-            var offsetY = (Height - textSize.Height) / 2 + BorderThinkness / 2;
+            // Сalculate padding to center the text
+            // We can't assume that g.DrawString will round the coordinates correctly, so we do it manually
+            var offsetX = (float)Math.Ceiling((Width - textSize.Width) / 2);
+            var offsetY = (float)Math.Ceiling((Height - textSize.Height) / 2);
 
             g.DrawString(cachedDisplayText, font, brush, offsetX, offsetY);
 
