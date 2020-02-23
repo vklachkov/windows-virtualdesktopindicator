@@ -50,12 +50,13 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\AutorunManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SystemMetrics.cs" />
-    <Compile Include="RegistryMonitor.cs" />
+    <Compile Include="Helpers\SystemMetrics.cs" />
+    <Compile Include="Helpers\RegistryMonitor.cs" />
     <Compile Include="TrayIndicator.cs" />
-    <Compile Include="VirtualDesktop.cs" />
+    <Compile Include="Helpers\VirtualDesktop.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

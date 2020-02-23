@@ -1,256 +1,242 @@
 ﻿using Microsoft.Win32;
-using RegistryUtils;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Windows.Forms;
+using VirtualDesktopIndicator.Helpers;
 
 namespace VirtualDesktopIndicator
 {
-    enum Theme { Light, Dark }
-
     class TrayIndicator : IDisposable
     {
-        
+        private static string AppName =>
+            Assembly.GetExecutingAssembly().GetName().Name;
 
-        #region Data
+        private NotifyIcon trayIcon;
+        private Timer timer;
 
-        private bool cachedSystemUsedLightTheme;
+        #region Virtual Desktops
+
+        private static int CurrentVirtualDesktop =>
+            VirtualDesktopApi.Desktop.FromDesktop(VirtualDesktopApi.Desktop.Current) + 1;
+
+        private int previewVirtualDesktop;
+
+        private static int VirtualDesktopsCount =>
+            VirtualDesktopApi.Desktop.Count;
+
+        #endregion
+
+        #region Theme
+
+        private const string RegistryThemeDataPath =
+            @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+
+        private enum Theme { Light, Dark }
+
+        private static readonly Dictionary<Theme, Color> ThemesColors = new Dictionary<Theme, Color>()
+        {
+            { Theme.Dark, Color.White },
+            { Theme.Light, Color.Black },
+        };
+
+        private Color CurrentThemeColor => ThemesColors[systemTheme];
+
+        private Theme cachedSystemTheme;
+        private Theme systemTheme;
 
         private RegistryMonitor registryMonitor;
 
-        Color DarkThemeColor { get; } = Color.White;
-        Color LightThemeColor { get; } = Color.Black;
-
-        Theme Theme = Theme.Dark;
-
-        Color iconColor => (Theme == Theme.Dark) ? DarkThemeColor : LightThemeColor;
-
-
-        string appName = "VirtualDesktopIndicator";
-
-        NotifyIcon trayIcon;
-        Timer timer;
-
-        #region Font
-
-
-
         #endregion
 
-        #region Common
+        #region Drawing data 
 
-        int VirtualDesktopsCount => VirtualDesktop.Desktop.Count;
+        private const string FontName = "Graph 35+ pix";
+        private const int FontSize = 32;
+        private FontStyle FontStyle = FontStyle.Regular;
 
-        int CurrentVirtualDesktop => VirtualDesktop.Desktop.FromDesktop(VirtualDesktop.Desktop.Current) + 1;
-        int CachedVirtualDesktop = 0;
+        private const int BaseHeight = 16;
+        private int Height => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CYICON);
 
-        private const string IconFontName = "Graph 35+ pix";
-        int IconFontSize { get; } = 32;
-        FontStyle IconFontStyle { get; } = FontStyle.Bold;
+        private const int BaseWidth = 16;
+        private int Width => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CXICON);
 
-        int height => SystemMetrics.GetSystemMetrics(SystemMetric.SM_CYICON);
-        int width => SystemMetrics.GetSystemMetrics(SystemMetric.SM_CXICON);
+        private int BorderThinkness => (int)Math.Ceiling((Height * Width) / (BaseHeight * BaseWidth) / 2.0);
 
-        int baseHeight = 16;
-        int baseWidth = 16;
-
-        int BorderThinkness => (int) Math.Ceiling((height * width) / (baseHeight * baseWidth) / 2.0);
-
-
-        string iconText;
-
-        #endregion
+        string cachedDisplayText;
 
         #endregion
 
         public TrayIndicator()
         {
-            trayIcon = new NotifyIcon
-            {
-                ContextMenuStrip = CreateContextMenu()
-            };
-            trayIcon.Click += trayIcon_Click;
+            trayIcon = new NotifyIcon { ContextMenuStrip = CreateContextMenu() };
+            trayIcon.Click += TrayIconClick;
 
-            timer = new Timer
-            {
-                Enabled = false
-            };
-            timer.Tick += timer_Update;
+            timer = new Timer { Enabled = false };
+            timer.Tick += TimerTick;
 
-            registryMonitor = new RegistryMonitor(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-            registryMonitor.RegChanged += new EventHandler(OnRegChanged);
-            registryMonitor.Error += new System.IO.ErrorEventHandler(OnError);
-            registryMonitor.Start();
+            InitRegistryMonitor();
+
+            cachedSystemTheme = systemTheme = GetSystemTheme();
         }
 
         #region Events
 
-        private void timer_Update(object sender, EventArgs e)
+        private void TimerTick(object sender, EventArgs e)
         {
             try
             {
-                if (CurrentVirtualDesktop != CachedVirtualDesktop)
-                {
-                    iconText = CurrentVirtualDesktop.ToString("0");
-                    if (CurrentVirtualDesktop >= 100) iconText = "++";
+                if (CurrentVirtualDesktop == previewVirtualDesktop) return;
 
-                    // GenerateIcon() can return null
-                    trayIcon.Icon = GenerateIcon(iconText);
+                cachedDisplayText = CurrentVirtualDesktop < 100 ? CurrentVirtualDesktop.ToString() : "++";
+                previewVirtualDesktop = CurrentVirtualDesktop;
 
-                    CachedVirtualDesktop = CurrentVirtualDesktop;
-                }
+                RedrawIcon();
             }
             catch
             {
-                MessageBox.Show("An unhandled error occured.", "VirtualDesktopIndicator", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    "An unhandled error occured!",
+                    "VirtualDesktopIndicator",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+
                 Application.Exit();
             }
         }
 
-        private void trayIcon_Click(object sender, EventArgs e)
+        private void TrayIconClick(object sender, EventArgs e)
         {
+            /*
             MouseEventArgs me = e as MouseEventArgs;
-            if (me.Button == MouseButtons.Left) ShowTaskView();
-        }
 
-        #endregion
-
-        #region Functions
-
-        #region Task View
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
-
-        public static void ShowTaskView()
-        {
-            const int KEYEVENTF_EXTENDEDKEY = 0x0001;  // Key down flag
-            const int KEYEVENTF_KEYUP = 0x0002;  // Key up flag
-
-            const int VK_TAB = 0x09;  // Tab key code
-            const int VK_LWIN = 0x5B;  // Windows key code
-
-            // Hold Windows down and press Tab
-            keybd_event(VK_LWIN, 0, KEYEVENTF_EXTENDEDKEY, 0);
-            keybd_event(VK_TAB, 0, KEYEVENTF_EXTENDEDKEY, 0);
-            keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, 0);
-            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
-        }
-
-        #endregion
-
-        #region Autorun
-
-        private bool GetAutorunStatus()
-        {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", false))
-            {
-                object keyValue = key.GetValue(appName) ?? "";
-
-                if (keyValue.ToString() != "\"" + Application.ExecutablePath + "\"")
-                {
-                    return false;
-                }
-                else return true;
-            }
-        }
-
-        // https://www.fluxbytes.com/csharp/start-application-at-windows-startup/
-
-        private void AddApplicationToAutorun()
-        {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true))
-            {
-                key.SetValue(appName, "\"" + Application.ExecutablePath + "\"");
-            }
-        }
-
-        private void RemoveApplicationFromAutorun()
-        {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true))
-            {
-                key.DeleteValue(appName, false);
-            }
+            if (me.Button == MouseButtons.Left)
+                ShowTaskView();
+            */
         }
 
         #endregion
 
         public void Display()
         {
+            registryMonitor.Start();
+
             trayIcon.Visible = true;
             timer.Enabled = true;
+        }
+
+        public void Dispose()
+        {
+            StopRegistryMonitor();
+
+            trayIcon.Dispose();
+            timer.Dispose();
+        }
+
+        private void InitRegistryMonitor()
+        {
+            registryMonitor = new RegistryMonitor(RegistryThemeDataPath);
+
+            registryMonitor.RegChanged += new EventHandler(OnRegistryChanged);
+            registryMonitor.Error += new ErrorEventHandler(OnRegistryError);
+        }
+
+        private void StopRegistryMonitor()
+        {
+            if (registryMonitor == null) return;
+
+            registryMonitor.Stop();
+            registryMonitor.RegChanged -= new EventHandler(OnRegistryChanged);
+            registryMonitor.Error -= new System.IO.ErrorEventHandler(OnRegistryError);
+            registryMonitor = null;
+        }
+
+        private void RedrawIcon()
+        {
+            trayIcon.Icon = GenerateIcon();
+        }
+
+        public static void ShowTaskView()
+        {
+            /*
+             * Unimplemented!
+             * I didn't find a efficient way to launch task viewer.
+             * Each of them has problems, but here are some solutions:
+             *   1. Run "explorer shell:::{3080F90E-D7AD-11D9-BD98-0000947B0257}"
+             *   2. Simulating <Win + Tab>
+             */
         }
 
         private ContextMenuStrip CreateContextMenu()
         {
             var menu = new ContextMenuStrip();
 
-            // Autostartup
-            ToolStripMenuItem autostartup = new ToolStripMenuItem("Start application at Windows startup")
+            var autorunItem = new ToolStripMenuItem("Start application at Windows startup")
             {
-                Checked = GetAutorunStatus()
+                Checked = AutorunManager.GetAutorunStatus(AppName, Application.ExecutablePath)
             };
-            autostartup.Click += (sender, e) =>
+            autorunItem.Click += (sender, e) =>
+            {
+                autorunItem.Checked = !autorunItem.Checked;
+
+                if (autorunItem.Checked)
                 {
-                    autostartup.Checked = !autostartup.Checked;
+                    AutorunManager.AddApplicationToAutorun(AppName, Application.ExecutablePath);
+                }
+                else
+                {
+                    AutorunManager.RemoveApplicationFromAutorun(AppName);
+                }
+            };
 
-                    if (GetAutorunStatus())
-                    {
-                        RemoveApplicationFromAutorun();
-                    }
-                    else
-                    {
-                        AddApplicationToAutorun();
-                    }
-                };
-            menu.Items.Add(autostartup);
-
-            // Separator
             menu.Items.Add(new ToolStripSeparator());
 
-            // Exit
-            ToolStripMenuItem exit = new ToolStripMenuItem("Exit");
-            exit.Click += (sender, e) => Application.Exit();
-            menu.Items.Add(exit);
+            var exitItem = new ToolStripMenuItem("Exit");
+            exitItem.Click += (sender, e) => Application.Exit();
+
+            menu.Items.Add(autorunItem);
+            menu.Items.Add(exitItem);
 
             return menu;
         }
 
-        private Icon GenerateIcon(string text)
+        private Icon GenerateIcon()
         {
+            var font = new Font(FontName, FontSize, FontStyle, GraphicsUnit.Pixel);
+            var brush = new SolidBrush(CurrentThemeColor);
+            var bitmap = new Bitmap(Width, Height);
 
-            Font fontToUse = new Font(IconFontName, IconFontSize, IconFontStyle, GraphicsUnit.Pixel);
-            Brush brushToUse = new SolidBrush(iconColor);
-            Bitmap bitmapText = new Bitmap(width, height);
+            var g = Graphics.FromImage(bitmap);
 
-            Graphics g = Graphics.FromImage(bitmapText);
-
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
+            g.SmoothingMode = SmoothingMode.HighSpeed;
+            g.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
 
             g.Clear(Color.Transparent);
 
             // Draw border
             g.DrawRectangle(
-                new Pen(iconColor, BorderThinkness),
-                new Rectangle(1, 1, width - 2, height - 2));
+                new Pen(CurrentThemeColor, BorderThinkness),
+                new Rectangle(1, 1, Width - 2, Height - 2)
+            );
 
             // Draw text
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            var textSize = g.MeasureString(cachedDisplayText, font);
 
-            var t = g.MeasureString(text, fontToUse);
+            var offsetX = (Width - textSize.Width) / 2 + BorderThinkness / 2;
+            var offsetY = (Height - textSize.Height) / 2 + BorderThinkness / 2;
 
-            var offsetX = (width - t.Width) / 2 + BorderThinkness / 2;
-            var offsetY = (height - t.Height) / 2 + BorderThinkness / 2;
-
-            g.DrawString(text, fontToUse, brushToUse, offsetX, offsetY);
+            g.DrawString(cachedDisplayText, font, brush, offsetX, offsetY);
 
             // Create icon from bitmap and return it
             // bitmapText.GetHicon() can throw exception
             try
             {
-                return Icon.FromHandle(bitmapText.GetHicon());
+                return Icon.FromHandle(bitmap.GetHicon());
             }
             catch
             {
@@ -258,42 +244,22 @@ namespace VirtualDesktopIndicator
             }
         }
 
-        #endregion
-
-        private void OnRegChanged(object sender, EventArgs e)
+        private Theme GetSystemTheme()
         {
-            var systemUsedLightTheme = (int)Registry.GetValue(
-                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
-                "SystemUsesLightTheme",
-                0
-            ) == 1;
-
-            if (systemUsedLightTheme != cachedSystemUsedLightTheme)
-            {
-                Theme = systemUsedLightTheme ? Theme.Light : Theme.Dark;
-
-            }
-
-            trayIcon.Icon = GenerateIcon(iconText);
-
-            cachedSystemUsedLightTheme = systemUsedLightTheme;
+            return (int)Registry.GetValue(RegistryThemeDataPath, "SystemUsesLightTheme", 0) == 1 ?
+                     Theme.Light :
+                     Theme.Dark;
         }
 
-        private void OnError(object sender, ErrorEventArgs e)
+        private void OnRegistryChanged(object sender, EventArgs e)
         {
-            if (registryMonitor != null)
-            {
-                registryMonitor.Stop();
-                registryMonitor.RegChanged -= new EventHandler(OnRegChanged);
-                registryMonitor.Error -= new System.IO.ErrorEventHandler(OnError);
-                registryMonitor = null;
-            }
+            systemTheme = GetSystemTheme();
+            if (systemTheme == cachedSystemTheme) return;
+
+            RedrawIcon();
+            cachedSystemTheme = systemTheme;
         }
 
-        public void Dispose()
-        {
-            trayIcon.Dispose();
-            timer.Dispose();
-        }
+        private void OnRegistryError(object sender, ErrorEventArgs e) => StopRegistryMonitor();
     }
 }

@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace VirtualDesktopIndicator
+namespace VirtualDesktopIndicator.Helpers
 {
-    public class SystemMetrics
+    public class SystemMetricsApi
     {
         [DllImport("user32.dll")]
         public static extern int GetSystemMetrics(SystemMetric smIndex);
