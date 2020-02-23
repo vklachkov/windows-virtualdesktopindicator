@@ -1,11 +1,12 @@
+using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using System.Runtime.InteropServices;
-using Microsoft.Win32;
+using System.Threading;
 
-namespace RegistryUtils
+// Code from https://www.codeproject.com/Articles/4502/RegistryMonitor-a-NET-wrapper-class-for-RegNotifyC
+namespace VirtualDesktopIndicator.Helpers
 {
     /// <summary>
     /// <b>RegistryMonitor</b> allows you to monitor specific registry key.
