@@ -60,8 +60,22 @@ namespace VirtualDesktopIndicator
         private const int BaseWidth = 16;
 
         // We use half the size, because otherwise the image is rendered with incorrect anti-aliasing
-        private int Height => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CYICON) / 2;
-        private int Width => SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CXICON) / 2;
+        private int Height
+        {
+            get
+            {
+                var height = SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CYICON) / 2;
+                return height < BaseHeight ? BaseHeight : height;
+            }
+        }
+        private int Width
+        {
+            get
+            {
+                var width = SystemMetricsApi.GetSystemMetrics(SystemMetric.SM_CXICON) / 2;
+                return width < BaseWidth ? BaseWidth : width;
+            }
+        }
 
         private int BorderThinkness => Width / BaseWidth;
 
