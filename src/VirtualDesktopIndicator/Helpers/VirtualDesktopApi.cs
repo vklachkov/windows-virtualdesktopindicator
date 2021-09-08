@@ -1,14 +1,9 @@
-// Author: Markus Scholtes, 2019
-// Version 1.4.1, 2019-07-15
-// Version for Windows 10 1809
-// Compile with:
-// C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe VirtualDesktop.cs
-
 using System;
 using System.Runtime.InteropServices;
 
 namespace VirtualDesktopApi
 {
+    #region COM API
     internal static class Guids
     {
         public static readonly Guid CLSID_ImmersiveShell = new Guid("C2F03A33-21F5-47FA-B4BB-156362A2F239");
@@ -128,29 +123,42 @@ namespace VirtualDesktopApi
 
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("FF72FFDD-BE7E-43FC-9C03-AD81681E88E4")]
+    [Guid("536D3495-B208-4CC9-AE26-DE8111275BF8")]
     internal interface IVirtualDesktop
     {
         bool IsViewVisible(IApplicationView view);
         Guid GetId();
+        IntPtr Unknown1();
+        [return: MarshalAs(UnmanagedType.HString)]
+        string GetName();
+        [return: MarshalAs(UnmanagedType.HString)]
+        string GetWallpaperPath();
     }
 
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("F31574D6-B682-4CDC-BD56-1827860ABEC6")]
+    [Guid("B2F925B9-5A0F-4D2E-9F4D-2B1507593C10")]
     internal interface IVirtualDesktopManagerInternal
     {
-        int GetCount();
+        int GetCount(IntPtr hWnd);
         void MoveViewToDesktop(IApplicationView view, IVirtualDesktop desktop);
         bool CanViewMoveDesktops(IApplicationView view);
-        IVirtualDesktop GetCurrentDesktop();
-        void GetDesktops(out IObjectArray desktops);
+        IVirtualDesktop GetCurrentDesktop(IntPtr hWnd);
+        void GetDesktops(IntPtr hWnd, out IObjectArray desktops);
         [PreserveSig]
         int GetAdjacentDesktop(IVirtualDesktop from, int direction, out IVirtualDesktop desktop);
-        void SwitchDesktop(IVirtualDesktop desktop);
-        IVirtualDesktop CreateDesktop();
+        void SwitchDesktop(IntPtr hWnd, IVirtualDesktop desktop);
+        IVirtualDesktop CreateDesktop(IntPtr hWnd);
+        void MoveDesktop(IVirtualDesktop desktop, IntPtr hWnd, int nIndex);
         void RemoveDesktop(IVirtualDesktop desktop, IVirtualDesktop fallback);
         IVirtualDesktop FindDesktop(ref Guid desktopid);
+        void Unknown1(IVirtualDesktop desktop, out IntPtr unknown1, out IntPtr unknown2);
+        void SetName(IVirtualDesktop desktop, [MarshalAs(UnmanagedType.HString)] string name);
+        void SetWallpaperPath(IVirtualDesktop desktop, [MarshalAs(UnmanagedType.HString)] string path);
+        void SetAllWallpaperPaths([MarshalAs(UnmanagedType.HString)] string path);
+        void Unknown2(IApplicationView pView0, IApplicationView pView1);
+        int Unknown3();
+        void RemoveAll(bool remove);
     }
 
     [ComImport]
@@ -182,7 +190,7 @@ namespace VirtualDesktopApi
     internal interface IObjectArray
     {
         void GetCount(out int count);
-        void GetAt(int index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)]out object obj);
+        void GetAt(int index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object obj);
     }
 
     [ComImport]
@@ -193,7 +201,9 @@ namespace VirtualDesktopApi
         [return: MarshalAs(UnmanagedType.IUnknown)]
         object QueryService(ref Guid service, ref Guid riid);
     }
+    #endregion
 
+    #region COM wrapper
     internal static class DesktopManager
     {
         static DesktopManager()
@@ -212,10 +222,10 @@ namespace VirtualDesktopApi
 
         internal static IVirtualDesktop GetDesktop(int index)
         {   // get desktop with index
-            int count = VirtualDesktopManagerInternal.GetCount();
+            int count = VirtualDesktopManagerInternal.GetCount(IntPtr.Zero);
             if (index < 0 || index >= count) throw new ArgumentOutOfRangeException("index");
             IObjectArray desktops;
-            VirtualDesktopManagerInternal.GetDesktops(out desktops);
+            VirtualDesktopManagerInternal.GetDesktops(IntPtr.Zero, out desktops);
             object objdesktop;
             desktops.GetAt(index, typeof(IVirtualDesktop).GUID, out objdesktop);
             Marshal.ReleaseComObject(desktops);
@@ -227,9 +237,9 @@ namespace VirtualDesktopApi
             int index = -1;
             Guid IdSearch = desktop.GetId();
             IObjectArray desktops;
-            VirtualDesktopManagerInternal.GetDesktops(out desktops);
+            VirtualDesktopManagerInternal.GetDesktops(IntPtr.Zero, out desktops);
             object objdesktop;
-            for (int i = 0; i < VirtualDesktopManagerInternal.GetCount(); i++)
+            for (int i = 0; i < VirtualDesktopManagerInternal.GetCount(IntPtr.Zero); i++)
             {
                 desktops.GetAt(i, typeof(IVirtualDesktop).GUID, out objdesktop);
                 if (IdSearch.CompareTo(((IVirtualDesktop)objdesktop).GetId()) == 0)
@@ -256,57 +266,153 @@ namespace VirtualDesktopApi
             return appId;
         }
     }
+    #endregion
 
+    #region public interface
     public class Desktop
     {
+        // get process id to window handle
+        [DllImport("user32.dll")]
+        private static extern int GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
+
+        // get handle of active window
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
         private IVirtualDesktop ivd;
         private Desktop(IVirtualDesktop desktop) { this.ivd = desktop; }
 
         public override int GetHashCode()
-        { // Get hash
+        { // get hash
             return ivd.GetHashCode();
         }
 
         public override bool Equals(object obj)
-        { // Compares with object
+        { // compare with object
             var desk = obj as Desktop;
             return desk != null && object.ReferenceEquals(this.ivd, desk.ivd);
         }
 
         public static int Count
-        { // Returns the number of desktops
-            get { return DesktopManager.VirtualDesktopManagerInternal.GetCount(); }
+        { // return the number of desktops
+            get { return DesktopManager.VirtualDesktopManagerInternal.GetCount(IntPtr.Zero); }
         }
 
         public static Desktop Current
-        { // Returns current desktop
-            get { return new Desktop(DesktopManager.VirtualDesktopManagerInternal.GetCurrentDesktop()); }
+        { // returns current desktop
+            get { return new Desktop(DesktopManager.VirtualDesktopManagerInternal.GetCurrentDesktop(IntPtr.Zero)); }
         }
 
         public static Desktop FromIndex(int index)
-        { // Create desktop object from index 0..Count-1
+        { // return desktop object from index (-> index = 0..Count-1)
             return new Desktop(DesktopManager.GetDesktop(index));
         }
 
         public static Desktop FromWindow(IntPtr hWnd)
-        { // Creates desktop object on which window <hWnd> is displayed
+        { // return desktop object to desktop on which window <hWnd> is displayed
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             Guid id = DesktopManager.VirtualDesktopManager.GetWindowDesktopId(hWnd);
             return new Desktop(DesktopManager.VirtualDesktopManagerInternal.FindDesktop(ref id));
         }
 
         public static int FromDesktop(Desktop desktop)
-        { // Returns index of desktop object or -1 if not found
+        { // return index of desktop object or -1 if not found
             return DesktopManager.GetDesktopIndex(desktop.ivd);
         }
 
+        public static string DesktopNameFromDesktop(Desktop desktop)
+        { // return name of desktop or "Desktop n" if it has no name
+
+            // get desktop name
+            string desktopName = null;
+            try
+            {
+                desktopName = desktop.ivd.GetName();
+            }
+            catch { }
+
+            // no name found, generate generic name
+            if (string.IsNullOrEmpty(desktopName))
+            { // create name "Desktop n" (n = number starting with 1)
+                desktopName = "Desktop " + (DesktopManager.GetDesktopIndex(desktop.ivd) + 1).ToString();
+            }
+            return desktopName;
+        }
+
+        public static string DesktopNameFromIndex(int index)
+        { // return name of desktop from index (-> index = 0..Count-1) or "Desktop n" if it has no name
+
+            // get desktop name
+            string desktopName = null;
+            try
+            {
+                desktopName = DesktopManager.GetDesktop(index).GetName();
+            }
+            catch { }
+
+            // no name found, generate generic name
+            if (string.IsNullOrEmpty(desktopName))
+            { // create name "Desktop n" (n = number starting with 1)
+                desktopName = "Desktop " + (index + 1).ToString();
+            }
+            return desktopName;
+        }
+
+        public static bool HasDesktopNameFromIndex(int index)
+        { // return true is desktop is named or false if it has no name
+
+            // read desktop name in registry
+            string desktopName = null;
+            try
+            {
+                desktopName = DesktopManager.GetDesktop(index).GetName();
+            }
+            catch { }
+
+            // name found?
+            if (string.IsNullOrEmpty(desktopName))
+                return false;
+            else
+                return true;
+        }
+
+        public static string DesktopWallpaperFromIndex(int index)
+        { // return name of desktop wallpaper from index (-> index = 0..Count-1)
+
+            // get desktop name
+            string desktopwppath = "";
+            try
+            {
+                desktopwppath = DesktopManager.GetDesktop(index).GetWallpaperPath();
+            }
+            catch { }
+
+            return desktopwppath;
+        }
+
+        public static int SearchDesktop(string partialName)
+        { // get index of desktop with partial name, return -1 if no desktop found
+            int index = -1;
+
+            for (int i = 0; i < DesktopManager.VirtualDesktopManagerInternal.GetCount(IntPtr.Zero); i++)
+            { // loop through all virtual desktops and compare partial name to desktop name
+                if (DesktopNameFromIndex(i).ToUpper().IndexOf(partialName.ToUpper()) >= 0)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
+        }
+
         public static Desktop Create()
-        { // Create a new desktop
-            return new Desktop(DesktopManager.VirtualDesktopManagerInternal.CreateDesktop());
+        { // create a new desktop
+            return new Desktop(DesktopManager.VirtualDesktopManagerInternal.CreateDesktop(IntPtr.Zero));
         }
 
         public void Remove(Desktop fallback = null)
-        { // Destroy desktop and switch to <fallback>
+        { // destroy desktop and switch to <fallback>
             IVirtualDesktop fallbackdesktop;
             if (fallback == null)
             { // if no fallback is given use desktop to the left except for desktop 0.
@@ -327,18 +433,45 @@ namespace VirtualDesktopApi
             DesktopManager.VirtualDesktopManagerInternal.RemoveDesktop(ivd, fallbackdesktop);
         }
 
+        public static void RemoveAll()
+        { // remove all desktops but visible
+            DesktopManager.VirtualDesktopManagerInternal.RemoveAll(true);
+        }
+
+        public void Move(int index)
+        { // move current desktop to desktop in index (-> index = 0..Count-1)
+            DesktopManager.VirtualDesktopManagerInternal.MoveDesktop(ivd, IntPtr.Zero, index);
+        }
+
+        public void SetName(string Name)
+        { // set name for desktop, empty string removes name
+            DesktopManager.VirtualDesktopManagerInternal.SetName(this.ivd, Name);
+        }
+
+        public void SetWallpaperPath(string Path)
+        { // set path for wallpaper, empty string removes path
+            if (string.IsNullOrEmpty(Path)) throw new ArgumentNullException();
+            DesktopManager.VirtualDesktopManagerInternal.SetWallpaperPath(this.ivd, Path);
+        }
+
+        public static void SetAllWallpaperPaths(string Path)
+        { // set wallpaper path for all desktops
+            if (string.IsNullOrEmpty(Path)) throw new ArgumentNullException();
+            DesktopManager.VirtualDesktopManagerInternal.SetAllWallpaperPaths(Path);
+        }
+
         public bool IsVisible
-        { // Returns <true> if this desktop is the current displayed one
-            get { return object.ReferenceEquals(ivd, DesktopManager.VirtualDesktopManagerInternal.GetCurrentDesktop()); }
+        { // return true if this desktop is the current displayed one
+            get { return object.ReferenceEquals(ivd, DesktopManager.VirtualDesktopManagerInternal.GetCurrentDesktop(IntPtr.Zero)); }
         }
 
         public void MakeVisible()
-        { // Make this desktop visible
-            DesktopManager.VirtualDesktopManagerInternal.SwitchDesktop(ivd);
+        { // make this desktop visible
+            DesktopManager.VirtualDesktopManagerInternal.SwitchDesktop(IntPtr.Zero, ivd);
         }
 
         public Desktop Left
-        { // Returns desktop at the left of this one, null if none
+        { // return desktop at the left of this one, null if none
             get
             {
                 IVirtualDesktop desktop;
@@ -351,7 +484,7 @@ namespace VirtualDesktopApi
         }
 
         public Desktop Right
-        { // Returns desktop at the right of this one, null if none
+        { // return desktop at the right of this one, null if none
             get
             {
                 IVirtualDesktop desktop;
@@ -364,7 +497,7 @@ namespace VirtualDesktopApi
         }
 
         public void MoveWindow(IntPtr hWnd)
-        { // Move window <hWnd> to this desktop
+        { // move window to this desktop
             int processId;
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             GetWindowThreadProcessId(hWnd, out processId);
@@ -386,29 +519,37 @@ namespace VirtualDesktopApi
             { // window of other process
                 IApplicationView view;
                 DesktopManager.ApplicationViewCollection.GetViewForHwnd(hWnd, out view);
-                DesktopManager.VirtualDesktopManagerInternal.MoveViewToDesktop(view, ivd);
+                try
+                {
+                    DesktopManager.VirtualDesktopManagerInternal.MoveViewToDesktop(view, ivd);
+                }
+                catch
+                { // could not move active window, try main window (or whatever windows thinks is the main window)
+                    DesktopManager.ApplicationViewCollection.GetViewForHwnd(System.Diagnostics.Process.GetProcessById(processId).MainWindowHandle, out view);
+                    DesktopManager.VirtualDesktopManagerInternal.MoveViewToDesktop(view, ivd);
+                }
             }
         }
 
         public void MoveActiveWindow()
-        {
+        { // move active window to this desktop
             MoveWindow(GetForegroundWindow());
         }
 
         public bool HasWindow(IntPtr hWnd)
-        { // Returns true if window <hWnd> is on this desktop
+        { // return true if window is on this desktop
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             return ivd.GetId() == DesktopManager.VirtualDesktopManager.GetWindowDesktopId(hWnd);
         }
 
         public static bool IsWindowPinned(IntPtr hWnd)
-        { // Returns true if window <hWnd> is pinned to all desktops
+        { // return true if window is pinned to all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             return DesktopManager.VirtualDesktopPinnedApps.IsViewPinned(hWnd.GetApplicationView());
         }
 
         public static void PinWindow(IntPtr hWnd)
-        { // pin window <hWnd> to all desktops
+        { // pin window to all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             var view = hWnd.GetApplicationView();
             if (!DesktopManager.VirtualDesktopPinnedApps.IsViewPinned(view))
@@ -418,7 +559,7 @@ namespace VirtualDesktopApi
         }
 
         public static void UnpinWindow(IntPtr hWnd)
-        { // unpin window <hWnd> from all desktops
+        { // unpin window from all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             var view = hWnd.GetApplicationView();
             if (DesktopManager.VirtualDesktopPinnedApps.IsViewPinned(view))
@@ -428,13 +569,13 @@ namespace VirtualDesktopApi
         }
 
         public static bool IsApplicationPinned(IntPtr hWnd)
-        { // Returns true if application for window <hWnd> is pinned to all desktops
+        { // return true if application for window is pinned to all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             return DesktopManager.VirtualDesktopPinnedApps.IsAppIdPinned(DesktopManager.GetAppId(hWnd));
         }
 
         public static void PinApplication(IntPtr hWnd)
-        { // pin application for window <hWnd> to all desktops
+        { // pin application for window to all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             string appId = DesktopManager.GetAppId(hWnd);
             if (!DesktopManager.VirtualDesktopPinnedApps.IsAppIdPinned(appId))
@@ -444,22 +585,15 @@ namespace VirtualDesktopApi
         }
 
         public static void UnpinApplication(IntPtr hWnd)
-        { // unpin application for window <hWnd> from all desktops
+        { // unpin application for window from all desktops
             if (hWnd == IntPtr.Zero) throw new ArgumentNullException();
             var view = hWnd.GetApplicationView();
             string appId = DesktopManager.GetAppId(hWnd);
             if (DesktopManager.VirtualDesktopPinnedApps.IsAppIdPinned(appId))
-            { // unpin only if already pinned
+            { // unpin only if pinned
                 DesktopManager.VirtualDesktopPinnedApps.UnpinAppID(appId);
             }
         }
-
-        // Get process id to window handle
-        [DllImport("user32.dll")]
-        public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
-
-        // Get handle of active window
-        [DllImport("user32.dll")]
-        public static extern IntPtr GetForegroundWindow();
     }
+    #endregion
 }
