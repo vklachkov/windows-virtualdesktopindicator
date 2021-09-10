@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using VirtualDesktopIndicator.Api;
 
 namespace VirtualDesktopIndicator
 {
@@ -11,11 +12,16 @@ namespace VirtualDesktopIndicator
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            using (TrayIndicator ti = new TrayIndicator())
+            using (TrayIndicator ti = new TrayIndicator(GetActualDesktopApi()))
             {
                 ti.Display();
                 Application.Run();
             }
+        }
+
+        private static IVirtualDesktopApi GetActualDesktopApi()
+        {
+            return new Latest();
         }
     }
 }
