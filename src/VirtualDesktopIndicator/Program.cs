@@ -21,7 +21,14 @@ namespace VirtualDesktopIndicator
 
         private static IVirtualDesktopApi GetActualDesktopApi()
         {
-            return new Latest();
+            if (Environment.OSVersion.Version.Build >= 22000)
+            {
+                return new Latest();
+            }
+            else
+            {
+                return new Previous();
+            }
         }
     }
 }
