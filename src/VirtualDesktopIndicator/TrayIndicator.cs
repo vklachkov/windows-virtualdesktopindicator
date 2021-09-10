@@ -7,6 +7,7 @@ using System.Drawing.Text;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using VirtualDesktopIndicator.Api;
 using VirtualDesktopIndicator.Helpers;
 
 namespace VirtualDesktopIndicator
@@ -16,18 +17,16 @@ namespace VirtualDesktopIndicator
         private static string AppName =>
             Assembly.GetExecutingAssembly().GetName().Name;
 
+        private IVirtualDesktopApi virtualDesktopProxy;
+
         private NotifyIcon trayIcon;
         private Timer timer;
 
         #region Virtual Desktops
 
-        private static int CurrentVirtualDesktop =>
-            VirtualDesktopApi.Desktop.FromDesktop(VirtualDesktopApi.Desktop.Current) + 1;
+        private uint previewVirtualDesktop = 0;
 
-        private int previewVirtualDesktop;
-
-        private static int VirtualDesktopsCount =>
-            VirtualDesktopApi.Desktop.Count;
+        private uint CurrentVirtualDesktop => virtualDesktopProxy.Current() + 1;
 
         #endregion
 
@@ -87,8 +86,10 @@ namespace VirtualDesktopIndicator
 
         #endregion
 
-        public TrayIndicator()
+        public TrayIndicator(IVirtualDesktopApi virtualDesktop)
         {
+            virtualDesktopProxy = virtualDesktop;
+
             trayIcon = new NotifyIcon { ContextMenuStrip = CreateContextMenu() };
             trayIcon.Click += TrayIconClick;
 
