@@ -4,7 +4,7 @@ Virtual desktop indicator for system tray with light and dark theme and HiDPI su
 
 ## Screenshot
 
-<img src="./preview.jpg" alt="drawing" width="194" height="40"/>
+<img src="./preview.jpg" alt="drawing" width="387" height="80"/>
 
 *Dark theme screenshot*
 
@@ -14,8 +14,10 @@ Download the latest release from [VirtualDesktopIndicator releases on GitHub](ht
 
 ## Special thanks
 
+This project wouldn't have been possible without the work done by the user [MScholtes](https://github.com/MScholtes) during the develop [VirtualDesktop](https://github.com/MScholtes/VirtualDesktop)
+
 Special thanks to the user [Flaflo](https://github.com/Flaflo) for improving compatibility with Windows 10 1809+.
 
 ## License
 
-The app is distributed under [MIT License](https://github.com/0gdump/windows-virtualdesktopindicator/blob/master/LICENSE).
+The app is distributed under [MIT License](https://github.com/zgdump/windows-virtualdesktopindicator/blob/master/LICENSE).
