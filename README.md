@@ -1,6 +1,6 @@
 # Virtual Desktop Indicator
 
-Virtual desktop indicator for system tray with light and dark theme and HiDPI support.
+Virtual desktop indicator for system tray, runs on Windows 10 and 11, supports both light/dark theme and HiDPI.
 
 ## Screenshot
 
