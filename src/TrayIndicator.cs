@@ -39,7 +39,7 @@ namespace VirtualDesktopIndicator
 
         private static readonly Dictionary<Theme, Color[]> ThemesColors = new Dictionary<Theme, Color[]>()
         {
-            { Theme.Dark, new[] { Color.White, Color.Gold, Color.LightGreen, Color.SlateBlue } },
+            { Theme.Dark, new[] { Color.White, Color.Gold, Color.LightGreen, Color.LightSkyBlue } },
             { Theme.Light, new[] { Color.Black, Color.Gold, Color.Blue, Color.DarkGreen } },
         };
 
