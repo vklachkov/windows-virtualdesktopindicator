@@ -37,13 +37,20 @@ namespace VirtualDesktopIndicator
 
         private enum Theme { Light, Dark }
 
-        private static readonly Dictionary<Theme, Color> ThemesColors = new Dictionary<Theme, Color>()
+        private static readonly Dictionary<Theme, Color[]> ThemesColors = new Dictionary<Theme, Color[]>()
         {
-            { Theme.Dark, Color.White },
-            { Theme.Light, Color.Black },
+            { Theme.Dark, new[] { Color.White, Color.SlateBlue, Color.Gold, Color.LightGreen } },
+            { Theme.Light, new[] { Color.Black, Color.Blue, Color.Gold, Color.DarkGreen } },
         };
 
-        private Color CurrentThemeColor => ThemesColors[systemTheme];
+        private Color CurrentThemeColor
+        {
+            get
+            {
+                var set = ThemesColors[systemTheme];
+                return set[Math.Min(CurrentVirtualDesktop, set.Length) - 1];
+            }
+        }
 
         private Theme cachedSystemTheme;
         private Theme systemTheme;
@@ -78,9 +85,9 @@ namespace VirtualDesktopIndicator
 
         private int BorderThinkness => Width / BaseWidth;
 
-        private const string FontName = "Tahoma";
+        private const string FontName = "Segoe";
         private int FontSize => (int)Math.Ceiling(Width / 1.5);
-        private FontStyle FontStyle = FontStyle.Regular;
+        private FontStyle FontStyle = FontStyle.Bold;
 
         string cachedDisplayText;
 
@@ -259,7 +266,7 @@ namespace VirtualDesktopIndicator
             // Сalculate padding to center the text
             // We can't assume that g.DrawString will round the coordinates correctly, so we do it manually
             var offsetX = (float)Math.Ceiling((Width - textSize.Width) / 2);
-            var offsetY = (float)Math.Ceiling((Height - textSize.Height) / 2);
+            var offsetY = (float)Math.Ceiling((Height - textSize.Height - 2) / 2);
 
             g.DrawString(cachedDisplayText, font, brush, offsetX, offsetY);
 
