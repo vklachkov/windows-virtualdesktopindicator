@@ -1,12 +1,9 @@
-using Microsoft.Win32;
-using System;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
+using Microsoft.Win32;
 
 // Code from https://www.codeproject.com/Articles/4502/RegistryMonitor-a-NET-wrapper-class-for-RegNotifyC
-namespace VirtualDesktopIndicator.Helpers
+namespace VirtualDesktopIndicator.Utils
 {
     /// <summary>
     /// <b>RegistryMonitor</b> allows you to monitor specific registry key.
@@ -44,7 +41,7 @@ namespace VirtualDesktopIndicator.Helpers
     /// }
     /// </code>
     /// </example>
-    public class RegistryMonitor : IDisposable
+    internal class RegistryMonitor : IDisposable
     {
         #region P/Invoke
 
@@ -200,31 +197,21 @@ namespace VirtualDesktopIndicator.Helpers
                 case RegistryHive.ClassesRoot:
                     _registryHive = HKEY_CLASSES_ROOT;
                     break;
-
                 case RegistryHive.CurrentConfig:
                     _registryHive = HKEY_CURRENT_CONFIG;
                     break;
-
                 case RegistryHive.CurrentUser:
                     _registryHive = HKEY_CURRENT_USER;
                     break;
-
-                case RegistryHive.DynData:
-                    _registryHive = HKEY_DYN_DATA;
-                    break;
-
                 case RegistryHive.LocalMachine:
                     _registryHive = HKEY_LOCAL_MACHINE;
                     break;
-
                 case RegistryHive.PerformanceData:
                     _registryHive = HKEY_PERFORMANCE_DATA;
                     break;
-
                 case RegistryHive.Users:
                     _registryHive = HKEY_USERS;
                     break;
-
                 default:
                     throw new InvalidEnumArgumentException("hive", (int)hive, typeof(RegistryHive));
             }

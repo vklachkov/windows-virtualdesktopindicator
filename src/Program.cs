@@ -1,34 +1,26 @@
-﻿using System;
-using System.Windows.Forms;
-using VirtualDesktopIndicator.Api;
+﻿using VirtualDesktopIndicator.Components;
+using VirtualDesktopIndicator.Native.VirtualDesktop;
+using VirtualDesktopIndicator.Native.VirtualDesktop.Implementation;
 
-namespace VirtualDesktopIndicator
+namespace VirtualDesktopIndicator;
+
+public static class Program
 {
-    class Program
+    [STAThread]
+    private static void Main()
     {
-        [STAThread]
-        static void Main()
-        {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
 
-            using (TrayIndicator ti = new TrayIndicator(GetActualDesktopApi()))
-            {
-                ti.Display();
-                Application.Run();
-            }
-        }
+        using var notifyIcon = new DesktopNotifyIcon(GetVirtualDesktop());
+        notifyIcon.Show();
+            
+        Application.Run();
+    }
 
-        private static IVirtualDesktopApi GetActualDesktopApi()
-        {
-            if (Environment.OSVersion.Version.Build >= 22000)
-            {
-                return new Latest();
-            }
-            else
-            {
-                return new Previous();
-            }
-        }
+    private static IVirtualDesktopManager GetVirtualDesktop()
+    {
+        const int win11MinBuild = 22000;
+        return Environment.OSVersion.Version.Build >= win11MinBuild ? new VirtualDesktopWin11() : new VirtualDesktopWin10();
     }
 }
