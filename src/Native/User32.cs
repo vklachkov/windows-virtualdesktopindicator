@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 
 namespace VirtualDesktopIndicator.Native;
 
@@ -19,6 +20,11 @@ public static class User32
     [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(SystemMetric smIndex);
 
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
     #endregion
 
     public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);

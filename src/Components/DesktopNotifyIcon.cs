@@ -1,5 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Text;
 using Microsoft.Win32;
 using VirtualDesktopIndicator.Helpers;
 using VirtualDesktopIndicator.Native;
@@ -86,6 +87,11 @@ internal class DesktopNotifyIcon : IDisposable
     private uint _lastVirtualDesktop;
     private string? _cachedDisplayText;
 
+    private readonly StringBuilder _foregroundWindowTextBuffer = new();
+    private readonly Timer _taskViewDetectionTimer;
+    private bool _taskViewOpen;
+    private bool _taskViewClick;
+
     public DesktopNotifyIcon(IVirtualDesktopManager virtualDesktop)
     {
         _virtualDesktopManager = virtualDesktop;
@@ -95,6 +101,9 @@ internal class DesktopNotifyIcon : IDisposable
 
         _timer = new() {Enabled = false};
         _timer.Tick += OnTimerTick;
+
+        _taskViewDetectionTimer = new() {Enabled = false, Interval = 500};
+        _taskViewDetectionTimer.Tick += OnTaskViewDetectionTimerTick;
 
         _mouseHook = new();
         _cachedSystemTheme = _systemTheme = GetSystemTheme();
@@ -113,6 +122,7 @@ internal class DesktopNotifyIcon : IDisposable
 
         _notifyIcon.Visible = true;
         _timer.Enabled = true;
+        _taskViewDetectionTimer.Enabled = true;
     }
 
     public void Dispose()
@@ -122,6 +132,7 @@ internal class DesktopNotifyIcon : IDisposable
 
         _notifyIcon.Dispose();
         _timer.Dispose();
+        _taskViewDetectionTimer.Dispose();
     }
 
     #endregion
@@ -169,7 +180,7 @@ internal class DesktopNotifyIcon : IDisposable
     #endregion
 
     #region Events
-
+    
     private void OnMouseScroll(object? sender, MouseScrollEventArgs e)
     {
         // We need to call the virtual desktop functions from a STA thread, because of COM quirks
@@ -192,6 +203,23 @@ internal class DesktopNotifyIcon : IDisposable
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
+    }
+    
+    
+    private void OnTaskViewDetectionTimerTick(object? sender, EventArgs e)
+    {
+        User32.GetWindowText(User32.GetForegroundWindow(), _foregroundWindowTextBuffer, 256);
+        
+        var taskViewOpened = _foregroundWindowTextBuffer.ToString().Equals("Task View");
+
+        if (taskViewOpened)
+        {
+            _taskViewClick = false;
+        }
+
+        _taskViewOpen = taskViewOpened || _taskViewClick;
+        
+        _foregroundWindowTextBuffer.Clear();
     }
 
     private void OnTimerTick(object? sender, EventArgs e)
@@ -237,7 +265,15 @@ internal class DesktopNotifyIcon : IDisposable
     {
         if (eventArgs.Button == MouseButtons.Left)
         {
-            Shell32.ShellExecuteClsid(ClsIds.TaskView);
+            if (!_taskViewOpen)
+            {
+                Shell32.ShellExecuteClsid(ClsIds.TaskView);
+                _taskViewClick = true;
+            }
+            else
+            {
+                _taskViewClick = false;
+            }
         }
     }
 
