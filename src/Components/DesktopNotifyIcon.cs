@@ -175,9 +175,9 @@ internal class DesktopNotifyIcon : IDisposable
         var thread = new Thread(() =>
         {
             var rect = Shell32.GetNotifyIconRect(_notifyIcon);
-
-            if (rect.left <= Cursor.Position.X && rect.right >= Cursor.Position.Y && rect.top <= Cursor.Position.Y &&
-                rect.bottom >= Cursor.Position.Y)
+            var cursor = Cursor.Position;
+            
+            if (rect.left <= cursor.X && rect.right >= cursor.X && rect.top <= cursor.Y && rect.bottom >= cursor.Y)
             {
                 if (e.Delta < 0)
                 {
@@ -234,7 +234,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     private void OnNotifyIconDoubleClick(object? sender, EventArgs eventArgs)
     {
-        Shell32.ShellExecuteCLSID(ClsIds.TaskView);
+        Shell32.ShellExecuteClsid(ClsIds.TaskView);
     }
 
     #endregion

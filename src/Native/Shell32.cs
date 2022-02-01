@@ -44,7 +44,7 @@ public static class Shell32
         return rect;
     }
 
-    public static void ShellExecuteCLSID(Guid guid)
+    public static void ShellExecuteClsid(Guid guid)
     {
         Process.Start(new ProcessStartInfo
         {
@@ -61,10 +61,10 @@ public static class Shell32
 [StructLayout(LayoutKind.Sequential)]
 public struct RECT
 {
-    public int left;
-    public int top;
-    public int right;
-    public int bottom;
+    public uint left;
+    public uint top;
+    public uint right;
+    public uint bottom;
 }
 
 [StructLayout(LayoutKind.Sequential)]
