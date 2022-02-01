@@ -29,8 +29,15 @@ internal class DesktopNotifyIcon : IDisposable
         {Theme.Dark, Color.White},
         {Theme.Light, Color.Black},
     };
+    
+    private static readonly Dictionary<Theme, Color> ThemesColorContrasts = new()
+    {
+        {Theme.Dark, Color.Black},
+        {Theme.Light, Color.Wheat}
+    };
 
     private Color CurrentThemeColor => ThemesColors[_systemTheme];
+    private Color CurrentThemeColorContrast => ThemesColorContrasts[_systemTheme];
 
     private Theme _cachedSystemTheme;
     private Theme _systemTheme;
@@ -376,7 +383,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     private void ShowDesktopNameToast(int stayTime = 800, int fadeTime = 25, double fadeStep = 0.025)
     {
-        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor);
+        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColorContrast, CurrentThemeColor);
 
         _notificationAnimationThread?.Interrupt();
         _notificationAnimationThread = new(() =>
