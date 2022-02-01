@@ -43,7 +43,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     private const string FontName = "Tahoma";
 
-    private static int BorderThinkness => Width / BaseWidth;
+    private static int BorderThickness => Width / BaseWidth;
     private static int FontSize => (int) Math.Ceiling(Width / 1.5);
 
     private readonly FontStyle FontStyle = FontStyle.Regular;
@@ -263,7 +263,7 @@ internal class DesktopNotifyIcon : IDisposable
         // The g.DrawRectangle always uses anti-aliasing and border looks very poor at such small resolutions
         // Implement own hack!
         var pen = new Pen(CurrentThemeColor, 1);
-        for (var thickness = 0; thickness < BorderThinkness; thickness++)
+        for (var thickness = 0; thickness < BorderThickness; thickness++)
         {
             // Top
             graphics.DrawLine(pen, 0, thickness, Width - 1, thickness);
