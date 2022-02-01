@@ -381,7 +381,7 @@ internal class DesktopNotifyIcon : IDisposable
         return menu;
     }
 
-    private void ShowDesktopNameToast(int stayTime = 800, int fadeTime = 25, double fadeStep = 0.025)
+    private void ShowDesktopNameToast(int stayTime = 1000, int fadeTime = 25, double fadeStep = 0.025)
     {
         _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor, CurrentThemeColorContrast);
 
