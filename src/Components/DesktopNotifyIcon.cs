@@ -2,7 +2,6 @@
 using System.Drawing.Text;
 using System.Text;
 using Microsoft.Win32;
-using VirtualDesktopIndicator.Helpers;
 using VirtualDesktopIndicator.Native;
 using VirtualDesktopIndicator.Native.Constants;
 using VirtualDesktopIndicator.Native.Hooks;
