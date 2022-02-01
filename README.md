@@ -10,13 +10,15 @@ Virtual desktop indicator for system tray, runs on Windows 10 and 11, supports b
 
 ## Install
 
-Download the latest release from [VirtualDesktopIndicator releases on GitHub](https://github.com/0gdump/windows-virtualdesktopindicator/releases "VirtualDesktopIndicator on GitHub") and run it.
+The application requires .NET 6.
+
+Download the latest release from [releases on GitHub](https://github.com/zgdump/windows-virtualdesktopindicator/releases) and run it.
 
 ## Special thanks
 
-This project wouldn't have been possible without the work done by the user [MScholtes](https://github.com/MScholtes) during the develop [VirtualDesktop](https://github.com/MScholtes/VirtualDesktop)
+This project wouldn't have been possible without the work done by the user [MScholtes](https://github.com/MScholtes) during the develop [VirtualDesktop](https://github.com/MScholtes/VirtualDesktop).
 
-Special thanks to the user [Flaflo](https://github.com/Flaflo) for improving compatibility with Windows 10 1809+.
+A significant contribution was made by [Flaflo](https://github.com/Flaflo). Without his help, there was no support for modern versions of Windows, as well as a some of useful features.
 
 ## License
 
