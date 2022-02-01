@@ -280,14 +280,12 @@ internal class DesktopNotifyIcon : IDisposable
     {
         if (eventArgs.Button == MouseButtons.Left)
         {
+            _taskViewClick = false;
+
             if (!_taskViewOpen)
             {
                 Shell32.ShellExecuteClsid(ClsIds.TaskView);
                 _taskViewClick = true;
-            }
-            else
-            {
-                _taskViewClick = false;
             }
         }
     }
