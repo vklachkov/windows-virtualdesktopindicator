@@ -2,6 +2,7 @@
 using System.Drawing.Text;
 using System.Text;
 using Microsoft.Win32;
+using VirtualDesktopIndicator.Config;
 using VirtualDesktopIndicator.Native;
 using VirtualDesktopIndicator.Native.Constants;
 using VirtualDesktopIndicator.Native.Hooks;
@@ -235,7 +236,10 @@ internal class DesktopNotifyIcon : IDisposable
         try
         {
             if (CurrentVirtualDesktop == _lastVirtualDesktop) return;
-            ShowDesktopNameToast();
+            if (UserConfig.Current.NotificationsEnabled)
+            {
+                ShowDesktopNameToast();
+            }
 
             _cachedDisplayText = CurrentVirtualDesktop < 100 ? CurrentVirtualDesktop.ToString() : "++";
             _lastVirtualDesktop = CurrentVirtualDesktop;
@@ -244,6 +248,9 @@ internal class DesktopNotifyIcon : IDisposable
         }
         catch (Exception ex)
         {
+            // Do not spam with error messages
+            _timer.Enabled = false;
+            
             MessageBox.Show(
                 $"{Constants.AppName} encountered an unhandled error:\n{ex}",
                 Constants.AppName,
@@ -370,11 +377,24 @@ internal class DesktopNotifyIcon : IDisposable
                 Autorun.Disable();
             }
         };
+        
+        var notificationsItem = new ToolStripMenuItem("Enable Notifications")
+        {
+            Checked = UserConfig.Current.NotificationsEnabled
+        };
+        notificationsItem.Click += (_, _) =>
+        {
+            notificationsItem.Checked = !notificationsItem.Checked;
+            
+            UserConfig.Current.NotificationsEnabled = notificationsItem.Checked;
+            UserConfig.Current.Save();
+        };
 
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => Application.Exit();
 
         menu.Items.Add(autorunItem);
+        menu.Items.Add(notificationsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
