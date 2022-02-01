@@ -90,7 +90,7 @@ internal class DesktopNotifyIcon : IDisposable
         _virtualDesktopManager = virtualDesktop;
 
         _notifyIcon = new() {ContextMenuStrip = CreateContextMenu()};
-        _notifyIcon.DoubleClick += OnNotifyIconDoubleClick;
+        _notifyIcon.Click += OnNotifyIconClick;
 
         _timer = new() {Enabled = false};
         _timer.Tick += OnTimerTick;
@@ -232,7 +232,7 @@ internal class DesktopNotifyIcon : IDisposable
         StopRegistryMonitor();
     }
 
-    private void OnNotifyIconDoubleClick(object? sender, EventArgs eventArgs)
+    private void OnNotifyIconClick(object? sender, EventArgs eventArgs)
     {
         Shell32.ShellExecuteClsid(ClsIds.TaskView);
     }
