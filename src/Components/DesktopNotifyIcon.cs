@@ -90,7 +90,7 @@ internal class DesktopNotifyIcon : IDisposable
         _virtualDesktopManager = virtualDesktop;
 
         _notifyIcon = new() {ContextMenuStrip = CreateContextMenu()};
-        _notifyIcon.Click += OnNotifyIconClick;
+        _notifyIcon.MouseClick += OnNotifyIconClick;
 
         _timer = new() {Enabled = false};
         _timer.Tick += OnTimerTick;
@@ -232,9 +232,12 @@ internal class DesktopNotifyIcon : IDisposable
         StopRegistryMonitor();
     }
 
-    private void OnNotifyIconClick(object? sender, EventArgs eventArgs)
+    private void OnNotifyIconClick(object? sender, MouseEventArgs eventArgs)
     {
-        Shell32.ShellExecuteClsid(ClsIds.TaskView);
+        if (eventArgs.Button == MouseButtons.Left)
+        {
+            Shell32.ShellExecuteClsid(ClsIds.TaskView);
+        }
     }
 
     #endregion
