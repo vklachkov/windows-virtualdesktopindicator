@@ -5,7 +5,7 @@ namespace VirtualDesktopIndicator.Config;
 
 public class UserConfig
 {
-    public static UserConfig Current { get; } = LoadFromFile("vdi_config.json");
+    public static UserConfig Current { get; } = LoadFromFile(Constants.ConfigName);
 
     public bool NotificationsEnabled { get; set; } = true;
 

@@ -219,7 +219,7 @@ internal class DesktopNotifyIcon : IDisposable
     {
         User32.GetWindowText(User32.GetForegroundWindow(), _foregroundWindowTextBuffer, 256);
         
-        var taskViewOpened = _foregroundWindowTextBuffer.ToString().Equals("Task View");
+        var taskViewOpened = _foregroundWindowTextBuffer.ToString().Equals(Constants.TaskView);
 
         if (taskViewOpened)
         {
