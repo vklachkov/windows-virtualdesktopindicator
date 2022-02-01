@@ -92,6 +92,8 @@ internal class DesktopNotifyIcon : IDisposable
     private bool _taskViewOpen;
     private bool _taskViewClick;
 
+    private Thread? _notificationAnimationThread;
+
     public DesktopNotifyIcon(IVirtualDesktopManager virtualDesktop)
     {
         _virtualDesktopManager = virtualDesktop;
@@ -227,12 +229,12 @@ internal class DesktopNotifyIcon : IDisposable
         try
         {
             if (CurrentVirtualDesktop == _lastVirtualDesktop) return;
+            ShowDesktopNameToast();
 
             _cachedDisplayText = CurrentVirtualDesktop < 100 ? CurrentVirtualDesktop.ToString() : "++";
             _lastVirtualDesktop = CurrentVirtualDesktop;
 
             RedrawIcon();
-            ShowDesktopNameToast();
         }
         catch (Exception ex)
         {
@@ -377,21 +379,33 @@ internal class DesktopNotifyIcon : IDisposable
     {
         _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor);
 
-        new Thread(() =>
+        _notificationAnimationThread?.Interrupt();
+        _notificationAnimationThread = new(() =>
         {
             // Delay animation
-            Thread.Sleep(stayTime);
+            try
+            {
+                Thread.Sleep(stayTime);
+            }
+            catch (Exception)
+            {
+                // Ignored
+            }
 
             // Fade out
-            while (_desktopDisplay.Opacity > 0)
+            while (_desktopDisplay.Opacity > 0 && _lastVirtualDesktop == CurrentVirtualDesktop)
             {
                 _desktopDisplay.Invoke(() => _desktopDisplay.Opacity -= fadeStep);
                 Thread.Sleep(fadeTime);
             }
 
             // Close form forever
-            _desktopDisplay.Invoke(() => _desktopDisplay.Hide());
-        }).Start();
+            if (_lastVirtualDesktop == CurrentVirtualDesktop)
+            {
+                _desktopDisplay.Invoke(() => _desktopDisplay.Hide());
+            }
+        });
+        _notificationAnimationThread.Start();
     }
 
     #endregion
