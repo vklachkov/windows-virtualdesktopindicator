@@ -61,10 +61,10 @@ public static class Shell32
 [StructLayout(LayoutKind.Sequential)]
 public struct RECT
 {
-    public uint left;
-    public uint top;
-    public uint right;
-    public uint bottom;
+    public int left;
+    public int top;
+    public int right;
+    public int bottom;
 }
 
 [StructLayout(LayoutKind.Sequential)]
