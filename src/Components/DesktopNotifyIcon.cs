@@ -73,6 +73,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     #endregion
 
+    private readonly DesktopNameForm _desktopDisplay = new(FontName);
     private readonly IVirtualDesktopManager _virtualDesktopManager;
 
     private readonly MouseScrollHook _mouseHook;
@@ -326,7 +327,7 @@ internal class DesktopNotifyIcon : IDisposable
             }
         };
 
-        var exitItem = new ToolStripMenuItem("Quit");
+        var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => Application.Exit();
 
         menu.Items.Add(autorunItem);
@@ -338,29 +339,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     private void ShowDesktopNameToast(int stayTime = 800, int fadeTime = 25, double fadeStep = 0.025)
     {
-        var desktopDisplayLabel = new Label
-        {
-            Text = _virtualDesktopManager.CurrentDisplayName(),
-            Font = new(FontName, 48, FontStyle.Bold, GraphicsUnit.Pixel),
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleCenter
-        };
-
-        var desktopDisplay = new Form();
-        desktopDisplay.ShowInTaskbar = false;
-        desktopDisplay.BackColor = CurrentThemeColor;
-        desktopDisplay.FormBorderStyle = FormBorderStyle.None;
-        desktopDisplay.StartPosition = FormStartPosition.Manual;
-        desktopDisplay.Controls.Add(desktopDisplayLabel);
-        desktopDisplay.TopMost = true;
-        desktopDisplay.Opacity = 1;
-        desktopDisplay.Width = TextRenderer.MeasureText(desktopDisplayLabel.Text, desktopDisplayLabel.Font).Width;
-        desktopDisplay.Height = 100;
-        desktopDisplay.Show();
-
-        // Setting location after showing is somehow more reliable with width and height?
-        desktopDisplay.Location = new(Screen.PrimaryScreen.Bounds.Width - desktopDisplay.Width,
-            Screen.PrimaryScreen.Bounds.Height - desktopDisplay.Height);
+        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor);
 
         new Thread(() =>
         {
@@ -368,14 +347,14 @@ internal class DesktopNotifyIcon : IDisposable
             Thread.Sleep(stayTime);
 
             // Fade out
-            while (desktopDisplay.Opacity > 0)
+            while (_desktopDisplay.Opacity > 0)
             {
-                desktopDisplay.Invoke(() => desktopDisplay.Opacity -= fadeStep);
+                _desktopDisplay.Invoke(() => _desktopDisplay.Opacity -= fadeStep);
                 Thread.Sleep(fadeTime);
             }
 
             // Close form forever
-            desktopDisplay.Invoke(() => desktopDisplay.Close());
+            _desktopDisplay.Invoke(() => _desktopDisplay.Hide());
         }).Start();
     }
 
