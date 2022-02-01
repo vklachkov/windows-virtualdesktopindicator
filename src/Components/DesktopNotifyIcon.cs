@@ -383,7 +383,7 @@ internal class DesktopNotifyIcon : IDisposable
 
     private void ShowDesktopNameToast(int stayTime = 800, int fadeTime = 25, double fadeStep = 0.025)
     {
-        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColorContrast, CurrentThemeColor);
+        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor, CurrentThemeColorContrast);
 
         _notificationAnimationThread?.Interrupt();
         _notificationAnimationThread = new(() =>
