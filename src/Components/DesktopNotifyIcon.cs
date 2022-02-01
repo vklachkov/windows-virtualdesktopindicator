@@ -33,7 +33,7 @@ internal class DesktopNotifyIcon : IDisposable
     private static readonly Dictionary<Theme, Color> ThemesColorContrasts = new()
     {
         {Theme.Dark, Color.Black},
-        {Theme.Light, Color.Wheat}
+        {Theme.Light, Color.White}
     };
 
     private Color CurrentThemeColor => ThemesColors[_systemTheme];
