@@ -9,6 +9,18 @@ public class UserConfig
 
     public bool NotificationsEnabled { get; set; } = true;
 
+    public string FontName { get; set; } = "Tahoma";
+
+    public FontStyle FontStyle { get; set; } = FontStyle.Regular;
+
+    public int AdditionalXOffset { get; set; } = 0;
+
+    public int AdditionalYOffset { get; set; } = 0;
+
+    public Dictionary<uint, Color> IconColorForLightThemeDesktop { get; set; } = new Dictionary<uint, Color>();
+
+    public Dictionary<uint, Color> IconColorForDarkThemeDesktop { get; set; } = new Dictionary<uint, Color>();
+
     [JsonIgnore]
     private string _path;
     

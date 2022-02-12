@@ -1,5 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Linq;
 using System.Text;
 using Microsoft.Win32;
 using VirtualDesktopIndicator.Config;
@@ -25,18 +26,42 @@ internal class DesktopNotifyIcon : IDisposable
         Dark
     }
 
-    private static readonly Dictionary<Theme, Color> ThemesColors = new()
+    private static readonly Dictionary<Theme, Color> DefaultIconColors = new()
     {
-        {Theme.Dark, Color.White},
-        {Theme.Light, Color.Black},
-    };
-    
-    private static readonly Dictionary<Theme, Color> ThemesColorContrasts = new()
-    {
-        {Theme.Dark, Color.Black},
-        {Theme.Light, Color.White}
+        { Theme.Dark, Color.White },
+        { Theme.Light, Color.Black },
     };
 
+    private static readonly Dictionary<Theme, Color> ThemesColors = new()
+    {
+        { Theme.Dark, Color.White },
+        { Theme.Light, Color.Black },
+    };
+
+    private static readonly Dictionary<Theme, Color> ThemesColorContrasts = new()
+    {
+        { Theme.Dark, Color.Black },
+        { Theme.Light, Color.White }
+    };
+
+    private Color CurrentIconColor
+    {
+        get
+        {
+            if (_systemTheme == Theme.Light)
+            {
+                return UserConfig.Current.IconColorForLightThemeDesktop.ContainsKey(CurrentVirtualDesktop)
+                    ? UserConfig.Current.IconColorForLightThemeDesktop[CurrentVirtualDesktop]
+                    : DefaultIconColors[_systemTheme];
+            }
+            else
+            {
+                return UserConfig.Current.IconColorForDarkThemeDesktop.ContainsKey(CurrentVirtualDesktop)
+                    ? UserConfig.Current.IconColorForDarkThemeDesktop[CurrentVirtualDesktop]
+                    : DefaultIconColors[_systemTheme];
+            }
+        }
+    }
     private Color CurrentThemeColor => ThemesColors[_systemTheme];
     private Color CurrentThemeColorContrast => ThemesColorContrasts[_systemTheme];
 
@@ -49,12 +74,12 @@ internal class DesktopNotifyIcon : IDisposable
 
     #region Drawing Constants
 
-    private const string FontName = "Tahoma";
+    private static string FontName => UserConfig.Current.FontName;
 
     private static int BorderThickness => Width / BaseWidth;
     private static int FontSize => (int) Math.Ceiling(Width / 1.5);
 
-    private readonly FontStyle FontStyle = FontStyle.Regular;
+    private static FontStyle FontStyle => UserConfig.Current.FontStyle;
 
     // Default windows tray icon size
     private const int BaseHeight = 16;
@@ -214,7 +239,6 @@ internal class DesktopNotifyIcon : IDisposable
         thread.Start();
     }
     
-    
     private void OnTaskViewDetectionTimerTick(object? sender, EventArgs e)
     {
         User32.GetWindowText(User32.GetForegroundWindow(), _foregroundWindowTextBuffer, 256);
@@ -302,7 +326,7 @@ internal class DesktopNotifyIcon : IDisposable
     private Icon? GenerateIcon()
     {
         var font = new Font(FontName, FontSize, FontStyle, GraphicsUnit.Pixel);
-        var brush = new SolidBrush(CurrentThemeColor);
+        var brush = new SolidBrush(CurrentIconColor);
         var bitmap = new Bitmap(Width, Height);
 
         var graphics = Graphics.FromImage(bitmap);
@@ -314,8 +338,8 @@ internal class DesktopNotifyIcon : IDisposable
 
         // Draw border
         // The g.DrawRectangle always uses anti-aliasing and border looks very poor at such small resolutions
-        // Implement own hack!
-        var pen = new Pen(CurrentThemeColor, 1);
+        // Just draw four lines around the edges
+        var pen = new Pen(CurrentIconColor, 1);
         for (var thickness = 0; thickness < BorderThickness; thickness++)
         {
             // Top
@@ -333,8 +357,8 @@ internal class DesktopNotifyIcon : IDisposable
 
         // Calculate padding to center the text
         // We can't assume that g.DrawString will round the coordinates correctly, so we do it manually
-        var offsetX = (float) Math.Ceiling((Width - textSize.Width) / 2);
-        var offsetY = (float) Math.Ceiling((Height - textSize.Height) / 2);
+        var offsetX = (float) Math.Ceiling((Width - textSize.Width + UserConfig.Current.AdditionalXOffset) / 2);
+        var offsetY = (float) Math.Ceiling((Height - textSize.Height + UserConfig.Current.AdditionalYOffset) / 2);
 
         graphics.DrawString(_cachedDisplayText, font, brush, offsetX, offsetY);
 
