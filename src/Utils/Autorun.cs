@@ -1,6 +1,6 @@
 ﻿using Microsoft.Win32;
 
-namespace VirtualDesktopIndicator.Helpers
+namespace VirtualDesktopIndicator.Utils
 {
     internal static class Autorun
     {

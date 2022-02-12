@@ -32,11 +32,12 @@ public class DesktopNameForm : Form
         });
     }
 
-    public void Show(string displayName, Color backColor)
+    public void Show(string displayName, Color foreColor, Color backColor)
     {
         _displayLabel.Text = displayName;
+        _displayLabel.ForeColor = foreColor;
         
-        Opacity = 1;
+        Opacity = 0.5;
         BackColor = backColor;
 
         Width = TextRenderer.MeasureText(_displayLabel.Text, _displayLabel.Font).Width;

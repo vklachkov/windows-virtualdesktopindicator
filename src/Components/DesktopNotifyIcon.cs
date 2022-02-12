@@ -2,7 +2,7 @@
 using System.Drawing.Text;
 using System.Text;
 using Microsoft.Win32;
-using VirtualDesktopIndicator.Helpers;
+using VirtualDesktopIndicator.Config;
 using VirtualDesktopIndicator.Native;
 using VirtualDesktopIndicator.Native.Constants;
 using VirtualDesktopIndicator.Native.Hooks;
@@ -30,8 +30,15 @@ internal class DesktopNotifyIcon : IDisposable
         {Theme.Dark, Color.White},
         {Theme.Light, Color.Black},
     };
+    
+    private static readonly Dictionary<Theme, Color> ThemesColorContrasts = new()
+    {
+        {Theme.Dark, Color.Black},
+        {Theme.Light, Color.White}
+    };
 
     private Color CurrentThemeColor => ThemesColors[_systemTheme];
+    private Color CurrentThemeColorContrast => ThemesColorContrasts[_systemTheme];
 
     private Theme _cachedSystemTheme;
     private Theme _systemTheme;
@@ -212,7 +219,7 @@ internal class DesktopNotifyIcon : IDisposable
     {
         User32.GetWindowText(User32.GetForegroundWindow(), _foregroundWindowTextBuffer, 256);
         
-        var taskViewOpened = _foregroundWindowTextBuffer.ToString().Equals("Task View");
+        var taskViewOpened = _foregroundWindowTextBuffer.ToString().Equals(Constants.TaskView);
 
         if (taskViewOpened)
         {
@@ -229,7 +236,10 @@ internal class DesktopNotifyIcon : IDisposable
         try
         {
             if (CurrentVirtualDesktop == _lastVirtualDesktop) return;
-            ShowDesktopNameToast();
+            if (UserConfig.Current.NotificationsEnabled)
+            {
+                ShowDesktopNameToast();
+            }
 
             _cachedDisplayText = CurrentVirtualDesktop < 100 ? CurrentVirtualDesktop.ToString() : "++";
             _lastVirtualDesktop = CurrentVirtualDesktop;
@@ -238,6 +248,9 @@ internal class DesktopNotifyIcon : IDisposable
         }
         catch (Exception ex)
         {
+            // Do not spam with error messages
+            _timer.Enabled = false;
+            
             MessageBox.Show(
                 $"{Constants.AppName} encountered an unhandled error:\n{ex}",
                 Constants.AppName,
@@ -267,14 +280,12 @@ internal class DesktopNotifyIcon : IDisposable
     {
         if (eventArgs.Button == MouseButtons.Left)
         {
+            _taskViewClick = false;
+
             if (!_taskViewOpen)
             {
                 Shell32.ShellExecuteClsid(ClsIds.TaskView);
                 _taskViewClick = true;
-            }
-            else
-            {
-                _taskViewClick = false;
             }
         }
     }
@@ -364,20 +375,33 @@ internal class DesktopNotifyIcon : IDisposable
                 Autorun.Disable();
             }
         };
+        
+        var notificationsItem = new ToolStripMenuItem("Enable Notifications")
+        {
+            Checked = UserConfig.Current.NotificationsEnabled
+        };
+        notificationsItem.Click += (_, _) =>
+        {
+            notificationsItem.Checked = !notificationsItem.Checked;
+            
+            UserConfig.Current.NotificationsEnabled = notificationsItem.Checked;
+            UserConfig.Current.Save();
+        };
 
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => Application.Exit();
 
         menu.Items.Add(autorunItem);
+        menu.Items.Add(notificationsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
         return menu;
     }
 
-    private void ShowDesktopNameToast(int stayTime = 800, int fadeTime = 25, double fadeStep = 0.025)
+    private void ShowDesktopNameToast(int stayTime = 1000, int fadeTime = 25, double fadeStep = 0.025)
     {
-        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor);
+        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor, CurrentThemeColorContrast);
 
         _notificationAnimationThread?.Interrupt();
         _notificationAnimationThread = new(() =>
