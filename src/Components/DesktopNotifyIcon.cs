@@ -124,8 +124,6 @@ internal class DesktopNotifyIcon : IDisposable
     private bool _taskViewOpen;
     private bool _taskViewClick;
 
-    private Thread? _notificationAnimationThread;
-
     public DesktopNotifyIcon(IVirtualDesktopManager virtualDesktop)
     {
         _virtualDesktopManager = virtualDesktop;
