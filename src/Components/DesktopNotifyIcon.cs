@@ -124,8 +124,6 @@ internal class DesktopNotifyIcon : IDisposable
     private bool _taskViewOpen;
     private bool _taskViewClick;
 
-    private Thread? _notificationAnimationThread;
-
     public DesktopNotifyIcon(IVirtualDesktopManager virtualDesktop)
     {
         _virtualDesktopManager = virtualDesktop;
@@ -262,7 +260,7 @@ internal class DesktopNotifyIcon : IDisposable
             if (CurrentVirtualDesktop == _lastVirtualDesktop) return;
             if (UserConfig.Current.NotificationsEnabled)
             {
-                ShowDesktopNameToast();
+                _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor, CurrentThemeColorContrast);
             }
 
             _cachedDisplayText = CurrentVirtualDesktop < 100 ? CurrentVirtualDesktop.ToString() : "++";
@@ -421,39 +419,6 @@ internal class DesktopNotifyIcon : IDisposable
         menu.Items.Add(exitItem);
 
         return menu;
-    }
-
-    private void ShowDesktopNameToast(int stayTime = 1000, int fadeTime = 25, double fadeStep = 0.025)
-    {
-        _desktopDisplay.Show(_virtualDesktopManager.CurrentDisplayName(), CurrentThemeColor, CurrentThemeColorContrast);
-
-        _notificationAnimationThread?.Interrupt();
-        _notificationAnimationThread = new(() =>
-        {
-            // Delay animation
-            try
-            {
-                Thread.Sleep(stayTime);
-            }
-            catch (Exception)
-            {
-                // Ignored
-            }
-
-            // Fade out
-            while (_desktopDisplay.Opacity > 0 && _lastVirtualDesktop == CurrentVirtualDesktop)
-            {
-                _desktopDisplay.Invoke(() => _desktopDisplay.Opacity -= fadeStep);
-                Thread.Sleep(fadeTime);
-            }
-
-            // Close form forever
-            if (_lastVirtualDesktop == CurrentVirtualDesktop)
-            {
-                _desktopDisplay.Invoke(() => _desktopDisplay.Hide());
-            }
-        });
-        _notificationAnimationThread.Start();
     }
 
     #endregion
