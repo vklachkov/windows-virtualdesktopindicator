@@ -245,23 +245,23 @@ internal class VirtualDesktopWin11 : IVirtualDesktopManager
 
         internal static int GetDesktopIndex(IVirtualDesktop desktop)
         {
-            int index = -1;
-            Guid IdSearch = desktop.GetId();
-            IObjectArray desktops;
-            VirtualDesktopManagerInternal.GetDesktops(IntPtr.Zero, out desktops);
-            object objdesktop;
-            for (int i = 0; i < VirtualDesktopManagerInternal.GetCount(IntPtr.Zero); i++)
+            var virtualDesktopIDsObj = Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VirtualDesktops", "VirtualDesktopIDs", null);
+            var virtualDesktopIDsBytes = new byte[0];
+            var virtualDesktopIDs = new List<Guid>();
+
+            if (virtualDesktopIDsObj != null)
             {
-                desktops.GetAt(i, typeof(IVirtualDesktop).GUID, out objdesktop);
-                if (IdSearch.CompareTo(((IVirtualDesktop) objdesktop).GetId()) == 0)
-                {
-                    index = i;
-                    break;
-                }
+                virtualDesktopIDsBytes = (byte[])virtualDesktopIDsObj;
+            }
+            
+            for (int i = 0; i < virtualDesktopIDsBytes.Length / 16; i++)
+            {
+                var idBytes = virtualDesktopIDsBytes.Skip(i*16).Take(16).ToArray();
+                var desktopId = new Guid(idBytes);
+                virtualDesktopIDs.Add(desktopId);
             }
 
-            Marshal.ReleaseComObject(desktops);
-            return index;
+            return virtualDesktopIDs.IndexOf(desktop.GetId());
         }
     }
 
